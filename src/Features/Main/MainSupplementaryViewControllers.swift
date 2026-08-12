@@ -11,7 +11,7 @@ final class LocalMeetDetailViewController: VXScrollViewController {
     required init?(coder: NSCoder) { fatalError() }
     override func viewDidLoad() {
         super.viewDidLoad()
-        let header = VXHeaderView(title: "Local Meet"); header.backButton.addTarget(self, action: #selector(back), for: .touchUpInside)
+        let header = VXHeaderView(title: "Local Meet"); header.trailingButton.isHidden = true; header.backButton.addTarget(self, action: #selector(back), for: .touchUpInside)
         let hero = UIImageView(image: meet.coverAssetName.flatMap(UIImage.init(named:))); hero.backgroundColor = VXColor.softGreen; hero.contentMode = .scaleAspectFill; hero.clipsToBounds = true; hero.vxRound(14)
         let title = vxLabel(meet.title, size: 24, weight: .bold, lines: 0)
         let date = DateFormatter.localizedString(from: meet.date, dateStyle: .medium, timeStyle: .short)

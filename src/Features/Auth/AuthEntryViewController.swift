@@ -205,7 +205,13 @@ public final class AuthEntryViewController: AuthScrollViewController, UITextView
 
     @objc private func checkboxTapped() { isAgreementSelected.toggle() }
     @objc private func guestTapped() { routeHandler(.continueAsGuest, self) }
-    @objc private func signUpTapped() { routeHandler(.openRegistration, self) }
+    @objc private func signUpTapped() {
+        guard isAgreementSelected else {
+            showMessage("Agreement Required", message: "Please accept the Privacy Policy and Terms of Service before continuing.")
+            return
+        }
+        routeHandler(.openRegistration, self)
+    }
 
     @objc private func emailSignInTapped() {
         guard isAgreementSelected else {

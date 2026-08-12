@@ -100,7 +100,7 @@ final class MainTabController: UITabBarController, UITabBarControllerDelegate {
     }
 
     func tabBarController(_ tabBarController: UITabBarController, shouldSelect viewController: UIViewController) -> Bool {
-        guard isGuest, let index = viewControllers?.firstIndex(of: viewController), index >= 2 else { return true }
+        guard isGuest, let index = viewControllers?.firstIndex(of: viewController), index >= 1 else { return true }
         onGuestRestriction?(); return false
     }
 }

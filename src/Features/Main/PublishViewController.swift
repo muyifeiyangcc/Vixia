@@ -13,16 +13,16 @@ final class PublishViewController: VXScrollViewController, PHPickerViewControlle
     private let mediaContainer = UIView()
     private let emptyMediaView = UIView()
     private lazy var mediaCollection = UICollectionView(frame: .zero, collectionViewLayout: UICollectionViewFlowLayout())
-    private let scooter = VXField(label: "Scooter (Required)", placeholder: "Vespa GTS 300 Super (2023)", labelSize: 16, fieldHeight: 52)
+    private let scooter = VXField(label: "Scooter (Required)", placeholder: "Classic Scooter 300cc (2023)", labelSize: 16, fieldHeight: 52)
     private let route = VXField(label: "Route & Distance (Required)", placeholder: "Malibu Coast Line & 42 mi", labelSize: 16, fieldHeight: 52)
     private let descriptionField = VXField(label: "Description", placeholder: "Tell riders about this Wave Drop", labelSize: 16, fieldHeight: 52)
     private let details = [
-        VXField(label: "Exhaust", placeholder: "Akrapovič Slip-On", labelSize: 16, fieldHeight: 52),
-        VXField(label: "Suspension", placeholder: "Bitubo Rear Shocks", labelSize: 16, fieldHeight: 52),
+        VXField(label: "Exhaust", placeholder: "Sport Exhaust System", labelSize: 16, fieldHeight: 52),
+        VXField(label: "Suspension", placeholder: "Sport Gas Rear Shocks", labelSize: 16, fieldHeight: 52),
         VXField(label: "Seat", placeholder: "Leather Diamond Stitch", labelSize: 16, fieldHeight: 52),
-        VXField(label: "Wheels", placeholder: "OZ Racing 12\"", labelSize: 16, fieldHeight: 52),
-        VXField(label: "ECU", placeholder: "Malossi Forcemaster 2", labelSize: 16, fieldHeight: 52),
-        VXField(label: "Lighting", placeholder: "LED Daymaker", labelSize: 16, fieldHeight: 52)
+        VXField(label: "Wheels", placeholder: "Lightweight Alloy 12\"", labelSize: 16, fieldHeight: 52),
+        VXField(label: "ECU", placeholder: "Sport ECU Tuner", labelSize: 16, fieldHeight: 52),
+        VXField(label: "Lighting", placeholder: "LED Headlight", labelSize: 16, fieldHeight: 52)
     ]
     private let submit = UIButton(type: .system)
     private let balanceButton = UIButton(type: .system)

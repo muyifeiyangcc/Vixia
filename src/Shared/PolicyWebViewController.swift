@@ -15,7 +15,7 @@ final class PolicyWebViewController: UIViewController {
     required init?(coder: NSCoder) { fatalError() }
     override func viewDidLoad() {
         super.viewDidLoad(); view.backgroundColor = VXColor.canvas
-        let header = VXHeaderView(title: pageTitle); header.backButton.addTarget(self, action: #selector(back), for: .touchUpInside)
+        let header = VXHeaderView(title: pageTitle); header.trailingButton.isHidden = true; header.backButton.addTarget(self, action: #selector(back), for: .touchUpInside)
         view.addSubview(header); view.addSubview(webView)
         header.snp.makeConstraints { $0.top.equalTo(view.safeAreaLayoutGuide).offset(8); $0.leading.trailing.equalToSuperview().inset(20); $0.height.equalTo(40) }
         webView.snp.makeConstraints { $0.top.equalTo(header.snp.bottom).offset(8); $0.leading.trailing.bottom.equalTo(view.safeAreaLayoutGuide) }

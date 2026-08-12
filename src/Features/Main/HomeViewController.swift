@@ -187,7 +187,14 @@ final class HomeViewController: UIViewController, UICollectionViewDataSource, UI
         cell.render(post, author: (repository as? MockDataRepository)?.rider(post.authorID))
         cell.onAuthor = { [weak self] in self?.openProfile(for: post.authorID) }
         cell.onLike = { [weak self] in self?.toggleLike(post) }
-        cell.onComment = { [weak self] in self?.openPost(post.id) }
+        cell.onComment = { [weak self] in
+            guard let self else { return }
+            if let tab = self.tabBarController as? MainTabController, tab.isGuest {
+                tab.onGuestRestriction?()
+                return
+            }
+            self.openPost(post.id)
+        }
         cell.onMore = { [weak self] in self?.presentMore(for: post) }
         return cell
     }
