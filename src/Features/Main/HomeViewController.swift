@@ -135,6 +135,10 @@ final class HomeViewController: UIViewController, UICollectionViewDataSource, UI
     }
 
     @objc private func openRecharge() {
+        if let tab = tabBarController as? MainTabController, tab.isGuest {
+            tab.onGuestRestriction?()
+            return
+        }
         navigationController?.pushViewController(RechargeViewController(), animated: true)
     }
 
