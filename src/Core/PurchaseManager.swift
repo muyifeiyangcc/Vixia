@@ -16,12 +16,16 @@ final class PurchaseManager: NSObject, SKProductsRequestDelegate, SKPaymentTrans
     static let shared = PurchaseManager()
 
     let catalog: [DiamondProduct] = [
-        DiamondProduct(productID: "lvbsvhxcgcrvesor", diamonds: 120, fallbackPrice: "$1.99"),
-        DiamondProduct(productID: "dxismgcwewhrtezo", diamonds: 360, fallbackPrice: "$4.99"),
-        DiamondProduct(productID: "khtxlcejaxmqcsra", diamonds: 800, fallbackPrice: "$9.99"),
-        DiamondProduct(productID: "yadwwvxspgxwlndb", diamonds: 1_800, fallbackPrice: "$19.99"),
-        DiamondProduct(productID: "qnrcuelbtiuflyky", diamonds: 3_600, fallbackPrice: "$39.99"),
-        DiamondProduct(productID: "ymohxnvpkqxutvab", diamonds: 9_000, fallbackPrice: "$99.99")
+        DiamondProduct(productID: "scrqnarytzarlywk", diamonds: 400, fallbackPrice: "$0.99"),
+        DiamondProduct(productID: "urclehxkhtyhqakt", diamonds: 800, fallbackPrice: "$1.99"),
+        DiamondProduct(productID: "flqttvwbrdpcxxfi", diamonds: 2_450, fallbackPrice: "$4.99"),
+        DiamondProduct(productID: "oclgiqgezkzccilt", diamonds: 5_150, fallbackPrice: "$9.99"),
+        DiamondProduct(productID: "nzkwetupkxraqnsy", diamonds: 6_400, fallbackPrice: "$12.99"),
+        DiamondProduct(productID: "duygxlwluyifcdam", diamonds: 10_800, fallbackPrice: "$19.99"),
+        DiamondProduct(productID: "wtakfgfoejokwjjj", diamonds: 14_900, fallbackPrice: "$24.99"),
+        DiamondProduct(productID: "ilwiosqjnwdgtqxx", diamonds: 29_400, fallbackPrice: "$49.99"),
+        DiamondProduct(productID: "htdmgufhqefpcrwy", diamonds: 39_500, fallbackPrice: "$79.99"),
+        DiamondProduct(productID: "intvavzdaijxusum", diamonds: 63_700, fallbackPrice: "$99.99")
     ]
 
     var onStateChange: ((PurchaseManagerState) -> Void)?
