@@ -231,8 +231,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Vixia/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Vixia;
-				INFOPLIST_KEY_NSCameraUsageDescription = "Vixia needs access to your camera to take photos, record riding videos, and update your profile picture.";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Vixia needs access to your microphone to record sound while capturing riding videos and send voice messages in chats.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Vixia needs access to your camera for video calls, taking photos, recording riding videos, and updating your profile picture.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Vixia needs access to your microphone to capture sound during video calls, record riding videos, and send voice messages in chats.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Vixia needs access to your photo library so you can select and upload photos for ride posts, share riding videos, and set your profile picture.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
@@ -244,7 +244,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.vivi.vixia;
+				PRODUCT_BUNDLE_IDENTIFIER = app.myfy.test;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -272,8 +272,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Vixia/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Vixia;
-				INFOPLIST_KEY_NSCameraUsageDescription = "Vixia needs access to your camera to take photos, record riding videos, and update your profile picture.";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Vixia needs access to your microphone to record sound while capturing riding videos and send voice messages in chats.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Vixia needs access to your camera for video calls, taking photos, recording riding videos, and updating your profile picture.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Vixia needs access to your microphone to capture sound during video calls, record riding videos, and send voice messages in chats.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Vixia needs access to your photo library so you can select and upload photos for ride posts, share riding videos, and set your profile picture.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
@@ -285,7 +285,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.vivi.vixia;
+				PRODUCT_BUNDLE_IDENTIFIER = app.myfy.test;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";

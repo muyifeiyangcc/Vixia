@@ -13,6 +13,7 @@ public final class SocialChatViewController: UIViewController, UITableViewDataSo
     public var messageLoader: SocialDataLoader<[SocialMessage]>?
     public var onPersistMessage: ((SocialMessage, @escaping SocialMutationCompletion<SocialMessage>) -> Void)?
     public var onBlockedUserExit: ((SocialUser) -> Void)?
+    public var onVideoCall: ((SocialUser) -> Void)?
 
     private let participant: SocialUser
     private let currentUserID: String
@@ -20,6 +21,7 @@ public final class SocialChatViewController: UIViewController, UITableViewDataSo
     private let tableView = UITableView(frame: .zero, style: .plain)
     private let stateView = SocialStateView()
     private let inputBar = UIView()
+    private let videoCallButton = UIControl()
     private let modeButton = UIButton(type: .system)
     private let textField = UITextField()
     private let imageButton = UIButton(type: .system)
@@ -95,7 +97,7 @@ public final class SocialChatViewController: UIViewController, UITableViewDataSo
         let title = UILabel(); title.text = "Posting as \(participant.role)"; title.font = .systemFont(ofSize: 14, weight: .semibold); title.textColor = SocialPalette.text
         let identity = UIStackView(arrangedSubviews: [headerAvatar, title]); identity.axis = .horizontal; identity.alignment = .center; identity.spacing = 8
         back.socialOnTap(self, #selector(backTapped)); more.socialOnTap(self, #selector(moreTapped))
-        view.addSubview(back); view.addSubview(more); view.addSubview(identity); view.addSubview(tableView); view.addSubview(stateView); view.addSubview(inputBar)
+        view.addSubview(back); view.addSubview(more); view.addSubview(identity); view.addSubview(tableView); view.addSubview(stateView); view.addSubview(videoCallButton); view.addSubview(inputBar)
         back.snp.makeConstraints { $0.leading.equalTo(18); $0.top.equalTo(view.safeAreaLayoutGuide).offset(12); $0.size.equalTo(44) }
         more.snp.makeConstraints { $0.trailing.equalTo(-17); $0.centerY.equalTo(back); $0.size.equalTo(44) }
         identity.snp.makeConstraints {
@@ -134,8 +136,35 @@ public final class SocialChatViewController: UIViewController, UITableViewDataSo
             $0.bottom.lessThanOrEqualTo(view.safeAreaLayoutGuide).offset(8)
         }
 
+        let videoIcon = UIImageView(image: UIImage(named: "video"))
+        videoIcon.contentMode = .scaleAspectFit
+        let videoTitle = UILabel()
+        videoTitle.text = "Video Call"
+        videoTitle.font = .systemFont(ofSize: 14, weight: .regular)
+        videoTitle.textColor = SocialPalette.text
+        let callIcon = UIImageView(image: UIImage(named: "tell"))
+        callIcon.contentMode = .scaleAspectFit
+        let videoContent = UIStackView(arrangedSubviews: [videoIcon, videoTitle, callIcon])
+        videoContent.axis = .horizontal
+        videoContent.alignment = .center
+        videoContent.spacing = 10
+        videoContent.isUserInteractionEnabled = false
+        videoCallButton.backgroundColor = SocialPalette.brand
+        videoCallButton.layer.cornerRadius = 14
+        videoCallButton.addSubview(videoContent)
+        videoCallButton.socialOnTap(self, #selector(videoCallTapped))
+        videoIcon.snp.makeConstraints { $0.width.equalTo(18); $0.height.equalTo(17) }
+        callIcon.snp.makeConstraints { $0.size.equalTo(22) }
+        videoContent.snp.makeConstraints { $0.center.equalToSuperview() }
+        videoCallButton.snp.makeConstraints {
+            $0.centerX.equalToSuperview()
+            $0.bottom.equalTo(inputBar.snp.top).offset(-10)
+            $0.width.equalTo(175)
+            $0.height.equalTo(38)
+        }
+
         tableView.backgroundColor = SocialPalette.page; tableView.separatorStyle = .none; tableView.showsVerticalScrollIndicator = false; tableView.keyboardDismissMode = .interactive; tableView.estimatedRowHeight = 90; tableView.rowHeight = UITableView.automaticDimension; tableView.dataSource = self; tableView.delegate = self; tableView.register(SocialMessageCell.self, forCellReuseIdentifier: "SocialMessageCell")
-        tableView.snp.makeConstraints { $0.top.equalTo(back.snp.bottom).offset(13); $0.leading.trailing.equalToSuperview(); $0.bottom.equalTo(inputBar.snp.top).offset(-8) }
+        tableView.snp.makeConstraints { $0.top.equalTo(back.snp.bottom).offset(13); $0.leading.trailing.equalToSuperview(); $0.bottom.equalTo(videoCallButton.snp.top).offset(-8) }
         stateView.snp.makeConstraints { $0.edges.equalTo(tableView) }
         stateView.actionButton.socialOnTap(self, #selector(retryTapped))
     }
@@ -197,6 +226,16 @@ public final class SocialChatViewController: UIViewController, UITableViewDataSo
     }
     @objc private func imageTapped() {
         imagePicker.presentSourceSheet()
+    }
+    @objc private func videoCallTapped() {
+        if let onVideoCall {
+            onVideoCall(participant)
+            return
+        }
+        stopPlayback(refresh: true)
+        let controller = SocialVideoCallViewController(participant: participant)
+        controller.modalPresentationStyle = .fullScreen
+        present(controller, animated: true)
     }
 
     private func sendImage(_ image: UIImage) {
@@ -359,6 +398,178 @@ public final class SocialChatViewController: UIViewController, UITableViewDataSo
             if self.navigationController?.topViewController === self { self.navigationController?.popViewController(animated: true) }
             else { self.dismiss(animated: true) }
         }
+    }
+}
+
+private final class SocialVideoCallViewController: UIViewController {
+    private let participant: SocialUser
+    private let ringEngine = AVAudioEngine()
+    private let ringPlayer = AVAudioPlayerNode()
+    private var ringAudioConfigured = false
+
+    init(participant: SocialUser) {
+        self.participant = participant
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override var preferredStatusBarStyle: UIStatusBarStyle { .lightContent }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        buildLayout()
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        startRinging()
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        stopRinging()
+    }
+
+    private func buildLayout() {
+        view.backgroundColor = .black
+        let resolvedAvatar = participant.avatar ?? participant.avatarName.flatMap(UIImage.init(named:))
+
+        let background = UIImageView(image: resolvedAvatar ?? UIImage(systemName: "person.crop.circle.fill"))
+        background.contentMode = .scaleAspectFill
+        background.clipsToBounds = true
+        background.tintColor = SocialPalette.secondary
+        view.addSubview(background)
+        background.snp.makeConstraints { $0.edges.equalToSuperview() }
+
+        let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterialDark))
+        view.addSubview(blur)
+        blur.snp.makeConstraints { $0.edges.equalToSuperview() }
+
+        let shade = UIView()
+        shade.backgroundColor = UIColor.black.withAlphaComponent(0.18)
+        view.addSubview(shade)
+        shade.snp.makeConstraints { $0.edges.equalToSuperview() }
+
+        let avatar = UIImageView(image: resolvedAvatar ?? UIImage(systemName: "person.crop.circle.fill"))
+        avatar.contentMode = .scaleAspectFill
+        avatar.clipsToBounds = true
+        avatar.tintColor = .white
+        avatar.layer.cornerRadius = 68
+
+        let name = UILabel()
+        name.text = participant.name
+        name.font = .systemFont(ofSize: 28, weight: .semibold)
+        name.textColor = .white
+        name.textAlignment = .center
+
+        let waiting = UILabel()
+        waiting.font = .systemFont(ofSize: 16, weight: .semibold)
+        waiting.textAlignment = .center
+        waiting.numberOfLines = 1
+        let fullText = "Waiting for \(participant.name) to answer..."
+        let waitingText = NSMutableAttributedString(string: fullText, attributes: [.foregroundColor: UIColor.white])
+        if let nameRange = fullText.range(of: participant.name) {
+            waitingText.addAttribute(.foregroundColor, value: SocialPalette.brand, range: NSRange(nameRange, in: fullText))
+        }
+        waiting.attributedText = waitingText
+
+        let hangUp = UIButton(type: .custom)
+        hangUp.backgroundColor = .white
+        hangUp.layer.cornerRadius = 43
+        hangUp.setImage(UIImage(named: "phone"), for: .normal)
+        hangUp.imageView?.contentMode = .scaleAspectFit
+        hangUp.addTarget(self, action: #selector(hangUpTapped), for: .touchUpInside)
+
+        [avatar, name, waiting, hangUp].forEach { view.addSubview($0) }
+        avatar.snp.makeConstraints {
+            $0.centerX.equalToSuperview()
+            $0.top.equalTo(view.safeAreaLayoutGuide).offset(311)
+            $0.size.equalTo(136)
+        }
+        name.snp.makeConstraints {
+            $0.top.equalTo(avatar.snp.bottom).offset(15)
+            $0.centerX.equalToSuperview()
+            $0.leading.greaterThanOrEqualTo(24)
+            $0.trailing.lessThanOrEqualTo(-24)
+        }
+        waiting.snp.makeConstraints {
+            $0.top.equalTo(name.snp.bottom).offset(25)
+            $0.leading.equalTo(24)
+            $0.trailing.equalTo(-24)
+        }
+        hangUp.snp.makeConstraints {
+            $0.top.equalTo(waiting.snp.bottom).offset(49)
+            $0.centerX.equalToSuperview()
+            $0.size.equalTo(86)
+        }
+        hangUp.imageView?.snp.makeConstraints {
+            $0.center.equalToSuperview()
+            $0.size.equalTo(68)
+        }
+    }
+
+    @objc private func hangUpTapped() {
+        stopRinging()
+        dismiss(animated: true)
+    }
+
+    private func startRinging() {
+        guard !ringEngine.isRunning else { return }
+        let sampleRate = 44_100.0
+        let duration = 1.6
+        guard let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1),
+              let buffer = AVAudioPCMBuffer(
+                pcmFormat: format,
+                frameCapacity: AVAudioFrameCount(sampleRate * duration)
+              ),
+              let samples = buffer.floatChannelData?[0] else { return }
+
+        buffer.frameLength = buffer.frameCapacity
+        for frame in 0..<Int(buffer.frameLength) {
+            let time = Double(frame) / sampleRate
+            let cycleTime = time.truncatingRemainder(dividingBy: duration)
+            let pulseStart: Double?
+            if cycleTime < 0.36 {
+                pulseStart = 0
+            } else if cycleTime >= 0.54, cycleTime < 0.90 {
+                pulseStart = 0.54
+            } else {
+                pulseStart = nil
+            }
+
+            guard let pulseStart else {
+                samples[frame] = 0
+                continue
+            }
+            let pulseTime = cycleTime - pulseStart
+            let envelope = min(1, min(pulseTime / 0.018, (0.36 - pulseTime) / 0.025))
+            let firstTone = sin(2 * .pi * 440 * time)
+            let secondTone = sin(2 * .pi * 480 * time)
+            samples[frame] = Float(max(0, envelope) * (firstTone + secondTone) * 0.075)
+        }
+
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback, mode: .default, options: [.duckOthers])
+            try session.setActive(true)
+            if !ringAudioConfigured {
+                ringEngine.attach(ringPlayer)
+                ringEngine.connect(ringPlayer, to: ringEngine.mainMixerNode, format: format)
+                ringAudioConfigured = true
+            }
+            try ringEngine.start()
+            ringPlayer.scheduleBuffer(buffer, at: nil, options: .loops)
+            ringPlayer.play()
+        } catch {
+            stopRinging()
+        }
+    }
+
+    private func stopRinging() {
+        ringPlayer.stop()
+        if ringEngine.isRunning { ringEngine.stop() }
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
 }
 
