@@ -2,11 +2,62 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-	</dict>
+	<key>FacebookAppID</key>
+	<string>27883361814682315</string>
+	<key>FacebookClientToken</key>
+	<string>9ee30c9da2cf6b3a4ee967073ea5060c</string>
+	<key>FacebookDisplayName</key>
+	<string>Vixia</string>
+	<key>FacebookAutoLogAppEventsEnabled</key>
+	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>vixia.bpackage</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>vixia</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>facebook</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>fb27883361814682315</string>
+			</array>
+		</dict>
+	</array>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>whatsapp</string>
+		<string>instagram</string>
+		<string>fb</string>
+		<string>tiktok</string>
+		<string>comgooglemaps</string>
+		<string>tweetie</string>
+		<string>wechat</string>
+		<string>alipay</string>
+		<string>mqq</string>
+		<string>itms-apps</string>
+		<string>itms-services</string>
+		<string>squarecash</string>
+		<string>cashme</string>
+		<string>upi</string>
+		<string>phonepe</string>
+		<string>paytmmp</string>
+		<string>gpay</string>
+		<string>com.amazon.mobile.shopping</string>
+		<string>mobikwik</string>
+		<string>freecharge</string>
+	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Vixia needs access to your camera for video calls, taking photos, recording riding videos, and updating your profile picture.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Vixia needs access to your microphone to capture sound during video calls, record riding videos, and send voice messages in chats.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Vixia needs access to your photo library so you can select and upload photos for ride posts, share riding videos, and set your profile picture.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

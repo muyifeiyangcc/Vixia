@@ -2,11 +2,19 @@ import UIKit
 import Darwin
 
 final class AppCoordinator {
+    struct BPackageNavigationContext {
+        let bPackageNavigationController: UINavigationController
+        let bPackageAPackageViewController: UIViewController
+    }
+
     private let window: UIWindow
     private let store: LocalStore
     private let accounts = LocalAccountStore.shared
     private let persistence = UserDefaultsEULAPersistence()
     private var authNavigation = UINavigationController()
+    var bPackageOnEULAAccepted: (() -> Void)?
+
+    var bPackageHasAcceptedEULA: Bool { persistence.hasAcceptedEULA }
 
     init(window: UIWindow, store: LocalStore = .shared) { self.window = window; self.store = store }
 
@@ -30,10 +38,32 @@ final class AppCoordinator {
         window.rootViewController = authNavigation
     }
 
+    func bPackageNavigationContext() -> BPackageNavigationContext? {
+        if let bPackageNavigationController = window.rootViewController as? UINavigationController,
+           let bPackageRoot = bPackageNavigationController.viewControllers.first {
+            return BPackageNavigationContext(
+                bPackageNavigationController: bPackageNavigationController,
+                bPackageAPackageViewController: bPackageRoot
+            )
+        }
+
+        guard let bPackageTabs = window.rootViewController as? UITabBarController else { return nil }
+        bPackageTabs.loadViewIfNeeded()
+        guard let bPackageNavigationController = bPackageTabs.selectedViewController as? UINavigationController,
+              let bPackageRoot = bPackageNavigationController.viewControllers.first else { return nil }
+        return BPackageNavigationContext(
+            bPackageNavigationController: bPackageNavigationController,
+            bPackageAPackageViewController: bPackageRoot
+        )
+    }
+
     private lazy var handle: AuthRouteHandler = { [weak self] intent, source in self?.route(intent, from: source) }
     private func route(_ intent: AuthRouteIntent, from source: UIViewController) {
         switch intent {
-        case .eulaAccepted: source.dismiss(animated: true)
+        case .eulaAccepted:
+            source.dismiss(animated: true) { [weak self] in
+                self?.bPackageOnEULAAccepted?()
+            }
         case .terminateApplicationRequested: Darwin.exit(EXIT_SUCCESS)
         case .continueAsGuest: showMain(isGuest: true)
         case .openEmailSignIn:

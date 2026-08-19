@@ -46,11 +46,6 @@ final class PurchaseManager: NSObject, SKProductsRequestDelegate, SKPaymentTrans
         SKPaymentQueue.default().add(self)
     }
 
-    deinit {
-        activeProductsRequest?.cancel()
-        SKPaymentQueue.default().remove(self)
-    }
-
     func loadProducts() {
         activeProductsRequest?.cancel()
         onStateChange?(.loadingProducts)
@@ -91,10 +86,13 @@ final class PurchaseManager: NSObject, SKProductsRequestDelegate, SKPaymentTrans
 
     func paymentQueue(_ queue: SKPaymentQueue, updatedTransactions transactions: [SKPaymentTransaction]) {
         for transaction in transactions {
+            if StoreKit1PurchaseManager.bPackageShared.bPackageOwnsProductIdentifier(
+                transaction.payment.productIdentifier
+            ) {
+                continue
+            }
             guard let product = catalog.first(where: { $0.productID == transaction.payment.productIdentifier }) else {
-                if transaction.transactionState == .purchased || transaction.transactionState == .failed || transaction.transactionState == .restored {
-                    queue.finishTransaction(transaction)
-                }
+                // Unknown products may belong to another observer. Never finish them here.
                 continue
             }
 

@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import FBSDKCoreKit
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
@@ -22,7 +23,39 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         self.window = window
         let coordinator = AppCoordinator(window: window)
         self.coordinator = coordinator
+        let bPackageDefersInitialRouteUntilApproval = !coordinator.bPackageHasAcceptedEULA
+        coordinator.bPackageOnEULAAccepted = {
+            BPackage.bPackageShared.bPackageApproveInitialRouteApplication()
+        }
         coordinator.start()
+
+        // MARK: - BPackage Begin
+        if let bPackageContext = coordinator.bPackageNavigationContext() {
+            BPackage.bPackageShared.bPackageStart(
+                bPackageNavigationController: bPackageContext.bPackageNavigationController,
+                bPackageConfiguration: BPackageProfile.bPackageConfiguration,
+                bPackageAPackageViewController: bPackageContext.bPackageAPackageViewController,
+                bPackageAppearance: BPackageProfile.bPackageAppearance,
+                bPackageAnalyticsAdapter: APackageBAnalyticsAdapter.bPackageShared,
+                bPackageDefersInitialRouteUntilApproval: bPackageDefersInitialRouteUntilApproval
+            )
+        }
+        // MARK: - BPackage End
+    }
+
+    // MARK: - BPackage URL Routing
+
+    func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+        guard let bPackageURL = URLContexts.first?.url else { return }
+        if bPackageURL.scheme?.lowercased() == BPackageProfile.bPackageConfiguration.bPackageExternalScheme {
+            _ = BPackage.bPackageShared.bPackageHandleOpenURL(bPackageURL)
+            return
+        }
+        _ = ApplicationDelegate.shared.application(
+            UIApplication.shared,
+            open: bPackageURL,
+            options: [:]
+        )
     }
 
     func showLogin() { coordinator?.showLogin() }
