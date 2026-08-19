@@ -4,6 +4,7 @@ import Foundation
 protocol BPackageAnalyticsAdapter: AnyObject {
     var bPackageAdjustAdID: String { get }
     var bPackageAttributionResult: String { get }
+    func bPackageResolveAdjustAdID() async -> String
     func bPackageTrackAdjustEvent(_ bPackageType: BPackageEventType,
                                   bPackageAmount: Decimal?,
                                   bPackageCurrency: String?)
@@ -18,6 +19,7 @@ protocol BPackageAttributionReporterBinding: AnyObject {
 final class BPackageNoopAnalyticsAdapter: BPackageAnalyticsAdapter {
     var bPackageAdjustAdID: String { "" }
     var bPackageAttributionResult: String { "" }
+    func bPackageResolveAdjustAdID() async -> String { "" }
     func bPackageTrackAdjustEvent(_ bPackageType: BPackageEventType,
                                   bPackageAmount: Decimal?,
                                   bPackageCurrency: String?) {
@@ -72,11 +74,24 @@ final class BPackageEventReporter {
             ? "只调用后端 ...j，不发送 Adjust SDK"
             : "发送 Adjust SDK，并异步调用后端 ...j"
         BPackageLogger.bPackageShared.bPackageLog("Adjust", "事件 \(bPackageType.rawValue)：\(bPackageDescription)")
-        Task {
+        Task { [weak bPackageAdapter] in
+            let bPackageResolvedAdID: String
+            if bPackageAdID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                bPackageResolvedAdID = await bPackageAdapter?.bPackageResolveAdjustAdID() ?? ""
+            } else {
+                bPackageResolvedAdID = bPackageAdID
+            }
+            guard !bPackageResolvedAdID.isEmpty else {
+                BPackageLogger.bPackageShared.bPackageLog(
+                    "Adjust上报失败",
+                    "事件=\(bPackageType.rawValue)，无法取得 Adjust ADID，未发送后端 ...j"
+                )
+                return
+            }
             do {
                 try await bPackageAPI.bPackageReportAdjust(bPackageResult: bPackageResult,
                                                            bPackageType: bPackageType,
-                                                           bPackageAdID: bPackageAdID)
+                                                           bPackageAdID: bPackageResolvedAdID)
             } catch {
                 BPackageLogger.bPackageShared.bPackageLog("Adjust上报失败", "事件=\(bPackageType.rawValue)，\(error.localizedDescription)；不阻塞主流程")
             }
@@ -91,4 +106,3 @@ final class BPackageEventReporter {
                                                        bPackageCurrency: bPackageCurrency)
     }
 }
-

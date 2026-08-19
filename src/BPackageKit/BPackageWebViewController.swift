@@ -18,6 +18,7 @@ final class BPackageWebViewController: UIViewController, WKNavigationDelegate, W
     private var bPackagePreviousNavigationBarHidden: Bool?
     private let bPackageProtectedContentView = UIView()
     private var bPackageScreenShieldContainerView: UIView?
+    private weak var bPackageWebBackgroundImageView: UIImageView?
     private let bPackageLoadingView = UIView()
     private let bPackageLoadingSpinner = UIActivityIndicatorView(style: .large)
     private let bPackageLoadingLabel = UILabel()
@@ -25,6 +26,9 @@ final class BPackageWebViewController: UIViewController, WKNavigationDelegate, W
     private let bPackagePaymentOverlay = UIView()
     private let bPackagePaymentSpinner = UIActivityIndicatorView(style: .large)
     private let bPackagePaymentLabel = UILabel()
+    private let bPackagePaymentToastView = UIView()
+    private let bPackagePaymentToastLabel = UILabel()
+    private var bPackagePaymentToastDismissWorkItem: DispatchWorkItem?
     private var bPackageOnInitialLoadReady: (() -> Void)?
     private var bPackageOnInitialLoadFailure: ((Error) -> Void)?
 
@@ -80,6 +84,7 @@ final class BPackageWebViewController: UIViewController, WKNavigationDelegate, W
         bPackageConfigureWebView()
         bPackageConfigureLoadingView()
         bPackageConfigurePaymentOverlay()
+        bPackageConfigurePaymentToast()
         StoreKit1PurchaseManager.bPackageShared.bPackageConfigure(
             bPackageAPI: bPackageAPI,
             bPackageEventReporter: bPackageEventReporter
@@ -135,6 +140,7 @@ final class BPackageWebViewController: UIViewController, WKNavigationDelegate, W
         bPackageConfigureProtectedContentContainer()
         if let bPackageBackgroundImage {
             let bPackageImageView = UIImageView(image: bPackageBackgroundImage)
+            bPackageWebBackgroundImageView = bPackageImageView
             bPackageImageView.translatesAutoresizingMaskIntoConstraints = false
             bPackageImageView.contentMode = .scaleAspectFill
             bPackageProtectedContentView.addSubview(bPackageImageView)
@@ -231,8 +237,10 @@ final class BPackageWebViewController: UIViewController, WKNavigationDelegate, W
             BPackageLogger.bPackageShared.bPackageLog("H5", "页面重新加载完成")
             return
         }
+        bPackageWebBackgroundImageView?.removeFromSuperview()
+        BPackageLogger.bPackageShared.bPackageLog("H5", "首次页面加载完成；已移除 H5 Loading 背景，避免透明区域继续显示登录底图")
         bPackageDidCompleteFirstLoad = true
-        BPackageLogger.bPackageShared.bPackageLog("H5", "首次页面加载完成；通知登录页展示已加载完成的 WebView")
+        BPackageLogger.bPackageShared.bPackageLog("H5", "通知登录页展示已加载完成的 WebView")
         let bPackageReady = bPackageOnInitialLoadReady
         bPackageOnInitialLoadReady = nil
         bPackageOnInitialLoadFailure = nil
@@ -263,7 +271,7 @@ final class BPackageWebViewController: UIViewController, WKNavigationDelegate, W
             let bPackageBatchNo = bPackageBody["batchNo"] as? String ?? ""
             let bPackageOrderCode = bPackageBody["orderCode"] as? String ?? ""
             guard !bPackageBatchNo.isEmpty, !bPackageOrderCode.isEmpty else {
-                bPackageShowPaymentAlert(bPackageTitle: "支付失败", bPackageMessage: "H5 batchNo 或 orderCode 为空")
+                bPackageShowPaymentAlert(bPackageTitle: "Payment Failed", bPackageMessage: "The payment information is incomplete.")
                 return
             }
             // 严格要求：用户点击购买、收到有效 rechargePay 时立即触发 InitiateCheckout。
@@ -309,15 +317,15 @@ final class BPackageWebViewController: UIViewController, WKNavigationDelegate, W
             bPackagePaymentOverlay.isHidden = false
             bPackagePaymentLabel.text = bPackageMessage
             bPackagePaymentSpinner.startAnimating()
-        case .bPackageSuccess(let bPackageMessage):
+        case .bPackageSuccess:
             bPackageHidePaymentOverlay()
-            bPackageShowPaymentAlert(bPackageTitle: "支付成功", bPackageMessage: bPackageMessage)
+            bPackageShowPaymentToast(bPackageMessage: "Payment successful")
         case .bPackageFailure(let bPackageMessage):
             bPackageHidePaymentOverlay()
-            bPackageShowPaymentAlert(bPackageTitle: "支付失败", bPackageMessage: bPackageMessage)
+            bPackageShowPaymentAlert(bPackageTitle: "Payment Failed", bPackageMessage: bPackageMessage)
         case .bPackageCancelled:
             bPackageHidePaymentOverlay()
-            bPackageShowPaymentAlert(bPackageTitle: "已取消", bPackageMessage: "用户取消了本次支付")
+            bPackageShowPaymentToast(bPackageMessage: "Payment cancelled")
         }
     }
 
@@ -329,8 +337,56 @@ final class BPackageWebViewController: UIViewController, WKNavigationDelegate, W
     private func bPackageShowPaymentAlert(bPackageTitle: String, bPackageMessage: String) {
         guard presentedViewController == nil else { return }
         let bPackageAlert = UIAlertController(title: bPackageTitle, message: bPackageMessage, preferredStyle: .alert)
-        bPackageAlert.addAction(UIAlertAction(title: "确定", style: .default))
+        bPackageAlert.addAction(UIAlertAction(title: "OK", style: .default))
         present(bPackageAlert, animated: true)
+    }
+
+    private func bPackageConfigurePaymentToast() {
+        bPackagePaymentToastView.translatesAutoresizingMaskIntoConstraints = false
+        bPackagePaymentToastView.backgroundColor = UIColor.black.withAlphaComponent(0.82)
+        bPackagePaymentToastView.layer.cornerRadius = 12
+        bPackagePaymentToastView.alpha = 0
+        bPackagePaymentToastView.isHidden = true
+
+        bPackagePaymentToastLabel.translatesAutoresizingMaskIntoConstraints = false
+        bPackagePaymentToastLabel.textColor = .white
+        bPackagePaymentToastLabel.font = .systemFont(ofSize: 15, weight: .semibold)
+        bPackagePaymentToastLabel.numberOfLines = 0
+        bPackagePaymentToastLabel.textAlignment = .center
+
+        bPackageProtectedContentView.addSubview(bPackagePaymentToastView)
+        bPackagePaymentToastView.addSubview(bPackagePaymentToastLabel)
+        NSLayoutConstraint.activate([
+            bPackagePaymentToastView.centerXAnchor.constraint(equalTo: bPackageProtectedContentView.centerXAnchor),
+            bPackagePaymentToastView.bottomAnchor.constraint(equalTo: bPackageProtectedContentView.safeAreaLayoutGuide.bottomAnchor, constant: -64),
+            bPackagePaymentToastView.leadingAnchor.constraint(greaterThanOrEqualTo: bPackageProtectedContentView.leadingAnchor, constant: 32),
+            bPackagePaymentToastView.trailingAnchor.constraint(lessThanOrEqualTo: bPackageProtectedContentView.trailingAnchor, constant: -32),
+            bPackagePaymentToastLabel.leadingAnchor.constraint(equalTo: bPackagePaymentToastView.leadingAnchor, constant: 20),
+            bPackagePaymentToastLabel.trailingAnchor.constraint(equalTo: bPackagePaymentToastView.trailingAnchor, constant: -20),
+            bPackagePaymentToastLabel.topAnchor.constraint(equalTo: bPackagePaymentToastView.topAnchor, constant: 12),
+            bPackagePaymentToastLabel.bottomAnchor.constraint(equalTo: bPackagePaymentToastView.bottomAnchor, constant: -12)
+        ])
+    }
+
+    private func bPackageShowPaymentToast(bPackageMessage: String) {
+        bPackagePaymentToastDismissWorkItem?.cancel()
+        bPackagePaymentToastLabel.text = bPackageMessage
+        bPackagePaymentToastView.isHidden = false
+        bPackageProtectedContentView.bringSubviewToFront(bPackagePaymentToastView)
+        UIView.animate(withDuration: 0.2) {
+            self.bPackagePaymentToastView.alpha = 1
+        }
+
+        let bPackageDismissWorkItem = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            UIView.animate(withDuration: 0.2, animations: {
+                self.bPackagePaymentToastView.alpha = 0
+            }, completion: { _ in
+                self.bPackagePaymentToastView.isHidden = true
+            })
+        }
+        bPackagePaymentToastDismissWorkItem = bPackageDismissWorkItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2, execute: bPackageDismissWorkItem)
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {

@@ -23,21 +23,29 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         self.window = window
         let coordinator = AppCoordinator(window: window)
         self.coordinator = coordinator
-        let bPackageDefersInitialRouteUntilApproval = !coordinator.bPackageHasAcceptedEULA
-        coordinator.bPackageOnEULAAccepted = {
-            BPackage.bPackageShared.bPackageApproveInitialRouteApplication()
-        }
-        coordinator.start()
+        let bPackageShouldRequestInitialRoute = BPackageProfile.bPackageShouldRequestInitialRoute
+        coordinator.start(bPackageDefersEULAUntilRouteDecision: bPackageShouldRequestInitialRoute)
 
         // MARK: - BPackage Begin
-        if let bPackageContext = coordinator.bPackageNavigationContext() {
+        if bPackageShouldRequestInitialRoute,
+           let bPackageContext = coordinator.bPackageNavigationContext() {
             BPackage.bPackageShared.bPackageStart(
                 bPackageNavigationController: bPackageContext.bPackageNavigationController,
                 bPackageConfiguration: BPackageProfile.bPackageConfiguration,
                 bPackageAPackageViewController: bPackageContext.bPackageAPackageViewController,
                 bPackageAppearance: BPackageProfile.bPackageAppearance,
                 bPackageAnalyticsAdapter: APackageBAnalyticsAdapter.bPackageShared,
-                bPackageDefersInitialRouteUntilApproval: bPackageDefersInitialRouteUntilApproval
+                bPackageOnAPackageRoute: { [weak coordinator] in
+                    coordinator?.bPackagePresentEULAIfNeeded()
+                }
+            )
+        } else if bPackageShouldRequestInitialRoute {
+            BPackageLogger.bPackageShared.bPackageLog("启动门禁", "无法取得 A 包导航上下文，保留 A 包并显示 EULA")
+            coordinator.bPackagePresentEULAIfNeeded()
+        } else {
+            BPackageLogger.bPackageShared.bPackageLog(
+                "时间门禁",
+                "当前时间未超过 \(Int(BPackageProfile.bPackageOpenRequestCutoffTimestamp))，不请求启动接口，直接进入 A 包"
             )
         }
         // MARK: - BPackage End

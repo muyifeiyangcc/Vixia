@@ -12,13 +12,11 @@ final class AppCoordinator {
     private let accounts = LocalAccountStore.shared
     private let persistence = UserDefaultsEULAPersistence()
     private var authNavigation = UINavigationController()
-    var bPackageOnEULAAccepted: (() -> Void)?
-
-    var bPackageHasAcceptedEULA: Bool { persistence.hasAcceptedEULA }
+    private var bPackageDidRequestEULAPresentation = false
 
     init(window: UIWindow, store: LocalStore = .shared) { self.window = window; self.store = store }
 
-    func start() {
+    func start(bPackageDefersEULAUntilRouteDecision: Bool = false) {
         if !store.hasExplicitlySignedOut,
            store.signedInUserID != nil,
            accounts.currentEmail != nil {
@@ -27,8 +25,22 @@ final class AppCoordinator {
             showLogin()
         }
         window.makeKeyAndVisible()
-        if case .presentEULA = AuthLaunchGate.decision(using: persistence) {
-            DispatchQueue.main.async { self.window.rootViewController?.present(AuthModule.makeEULA(persistence: self.persistence, routeHandler: self.handle), animated: true) }
+        if !bPackageDefersEULAUntilRouteDecision {
+            bPackagePresentEULAIfNeeded()
+        }
+    }
+
+    /// 时间门禁未开启时直接调用；时间门禁开启时，只能在启动接口明确判定为 A 包后调用。
+    func bPackagePresentEULAIfNeeded() {
+        guard !bPackageDidRequestEULAPresentation,
+              case .presentEULA = AuthLaunchGate.decision(using: persistence) else { return }
+        bPackageDidRequestEULAPresentation = true
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.window.rootViewController?.present(
+                AuthModule.makeEULA(persistence: self.persistence, routeHandler: self.handle),
+                animated: true
+            )
         }
     }
 
@@ -61,9 +73,7 @@ final class AppCoordinator {
     private func route(_ intent: AuthRouteIntent, from source: UIViewController) {
         switch intent {
         case .eulaAccepted:
-            source.dismiss(animated: true) { [weak self] in
-                self?.bPackageOnEULAAccepted?()
-            }
+            source.dismiss(animated: true)
         case .terminateApplicationRequested: Darwin.exit(EXIT_SUCCESS)
         case .continueAsGuest: showMain(isGuest: true)
         case .openEmailSignIn:

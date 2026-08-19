@@ -9,7 +9,7 @@ final class APackageBAnalyticsAdapter: BPackageAnalyticsAdapter {
     static let bPackageShared = APackageBAnalyticsAdapter()
 
     private let bPackageLock = NSLock()
-    private var bPackageStoredAdjustAdID = ""
+    private var bPackageStoredAdjustAdID = BPackageStorage.bPackageShared.bPackageAdjustAdID
     private var bPackageStoredAttributionResult = ""
     private var bPackageDidInitializeFacebook = false
 
@@ -27,10 +27,47 @@ final class APackageBAnalyticsAdapter: BPackageAnalyticsAdapter {
         return bPackageStoredAttributionResult
     }
 
+    func bPackageResolveAdjustAdID() async -> String {
+        let bPackageCachedAdID = bPackageAdjustAdID
+        if !bPackageCachedAdID.isEmpty {
+            return bPackageCachedAdID
+        }
+
+        #if canImport(AdjustSdk)
+        for bPackageAttempt in 1...3 {
+            let bPackageFetchedAdID: String = await withCheckedContinuation { bPackageContinuation in
+                Adjust.adid { bPackageAdID in
+                    bPackageContinuation.resume(
+                        returning: (bPackageAdID ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                    )
+                }
+            }
+            if !bPackageFetchedAdID.isEmpty {
+                bPackageStoreAdjustAdID(bPackageFetchedAdID)
+                BPackageLogger.bPackageShared.bPackageLog(
+                    "Adjust",
+                    "主动获取 adid 成功（第 \(bPackageAttempt) 次）"
+                )
+                return bPackageFetchedAdID
+            }
+            if bPackageAttempt < 3 {
+                try? await Task.sleep(nanoseconds: 500_000_000)
+            }
+        }
+        #endif
+
+        let bPackageLatestAdID = bPackageAdjustAdID
+        BPackageLogger.bPackageShared.bPackageLog(
+            "Adjust",
+            "主动获取 adid 失败，登录接口不会上传空值"
+        )
+        return bPackageLatestAdID
+    }
+
     func bPackageUpdateAttribution(bPackageAttribution: ADJAttribution?, bPackageAdID: String) {
         let bPackageResult = bPackageAttributionJSON(bPackageAttribution)
+        bPackageStoreAdjustAdID(bPackageAdID)
         bPackageLock.lock()
-        bPackageStoredAdjustAdID = bPackageAdID
         bPackageStoredAttributionResult = bPackageResult
         bPackageLock.unlock()
 
@@ -38,6 +75,15 @@ final class APackageBAnalyticsAdapter: BPackageAnalyticsAdapter {
             "Adjust",
             "收到归因回调，adid=\(bPackageAdID.isEmpty ? "空" : "非空")，ajResult=\(bPackageResult.isEmpty ? "空字符串" : "非空")"
         )
+    }
+
+    private func bPackageStoreAdjustAdID(_ bPackageAdID: String) {
+        let bPackageNormalizedAdID = bPackageAdID.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !bPackageNormalizedAdID.isEmpty else { return }
+        bPackageLock.lock()
+        bPackageStoredAdjustAdID = bPackageNormalizedAdID
+        bPackageLock.unlock()
+        BPackageStorage.bPackageShared.bPackageAdjustAdID = bPackageNormalizedAdID
     }
 
     func bPackageAttributionJSON(_ bPackageAttribution: ADJAttribution?) -> String {

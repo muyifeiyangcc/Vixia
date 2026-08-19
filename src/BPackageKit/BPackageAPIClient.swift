@@ -6,6 +6,7 @@ enum BPackageAPIError: LocalizedError {
     case bPackageHTTP(Int, String)
     case bPackageBusiness(String, String?)
     case bPackageMissingResult
+    case bPackageMissingAdjustAdID
 
     var errorDescription: String? {
         switch self {
@@ -14,6 +15,7 @@ enum BPackageAPIError: LocalizedError {
         case .bPackageHTTP(let bPackageCode, let bPackageBody): return "HTTP \(bPackageCode)：\(bPackageBody)"
         case .bPackageBusiness(let bPackageCode, let bPackageMessage): return "业务失败 \(bPackageCode)：\(bPackageMessage ?? "")"
         case .bPackageMissingResult: return "响应缺少 result/data"
+        case .bPackageMissingAdjustAdID: return "暂时无法获取 Adjust ID，请稍后重试"
         }
     }
 }
@@ -61,8 +63,10 @@ final class BPackageAPIClient {
     func bPackageLogin(bPackageAdjustAdID: String = "") async throws -> BPackageLoginResult {
         let bPackageFields = bPackageConfiguration.bPackageFields
         let bPackageSavedPassword = bPackageStorage.bPackagePassword
+        let bPackageNormalizedAdjustAdID = bPackageAdjustAdID.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !bPackageNormalizedAdjustAdID.isEmpty else { throw BPackageAPIError.bPackageMissingAdjustAdID }
         var bPackageBody: [String: Any] = [
-            bPackageFields.bPackageAdjustAdid: bPackageAdjustAdID,
+            bPackageFields.bPackageAdjustAdid: bPackageNormalizedAdjustAdID,
             bPackageFields.bPackageDeviceNo: bPackageStorage.bPackageStableDeviceID(bPackageAppID: bPackageConfiguration.bPackageAppID)
         ]
         if !bPackageSavedPassword.isEmpty { bPackageBody[bPackageFields.bPackagePassword] = bPackageSavedPassword }
@@ -91,11 +95,13 @@ final class BPackageAPIClient {
                               bPackageType: BPackageEventType,
                               bPackageAdID: String) async throws {
         let bPackageFields = bPackageConfiguration.bPackageFields
+        let bPackageNormalizedAdjustAdID = bPackageAdID.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !bPackageNormalizedAdjustAdID.isEmpty else { throw BPackageAPIError.bPackageMissingAdjustAdID }
         try await bPackageSendAcknowledgement(bPackagePath: bPackageConfiguration.bPackageAdjustPath, bPackageBody: [
             bPackageFields.bPackageAdjustResult: bPackageResult,
             bPackageFields.bPackageEventType: bPackageType.rawValue,
             bPackageFields.bPackageEventDeviceID: bPackageStorage.bPackageStableDeviceID(bPackageAppID: bPackageConfiguration.bPackageAppID),
-            bPackageFields.bPackageEventAdid: bPackageAdID
+            bPackageFields.bPackageEventAdid: bPackageNormalizedAdjustAdID
         ])
     }
 

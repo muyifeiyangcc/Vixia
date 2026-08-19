@@ -1,4 +1,5 @@
 import UIKit
+import Network
 
 struct BPackageAppearance {
     var bPackageLaunchBackgroundImage: UIImage? = nil
@@ -17,16 +18,13 @@ final class BPackage {
     private var bPackageAppearance = BPackageAppearance()
     private var bPackageLaunchCover: UIView?
     private var bPackagePendingInstallAttribution: (bPackageResult: String?, bPackageAdID: String)?
+    private var bPackageOnAPackageRoute: (() -> Void)?
+    private var bPackageNetworkMonitor: NWPathMonitor?
+    private let bPackageNetworkMonitorQueue = DispatchQueue(label: "com.vixia.bpackage.network-monitor")
+    private var bPackageNetworkIsAvailable = false
+    private var bPackageDidBeginInitialRequest = false
+    private var bPackageRetryTask: Task<Void, Never>?
     private var bPackageDidStart = false
-    private var bPackageCanApplyInitialRoute = true
-    private var bPackageInitialRouteState = BPackageInitialRouteState.bPackageIdle
-
-    private enum BPackageInitialRouteState {
-        case bPackageIdle
-        case bPackageLoading
-        case bPackageResolved(BPackageRoute)
-        case bPackageFailed(String)
-    }
 
     private init() {}
 
@@ -35,7 +33,7 @@ final class BPackage {
                        bPackageAPackageViewController: UIViewController,
                        bPackageAppearance: BPackageAppearance,
                        bPackageAnalyticsAdapter: BPackageAnalyticsAdapter,
-                       bPackageDefersInitialRouteUntilApproval: Bool = false) {
+                       bPackageOnAPackageRoute: @escaping () -> Void) {
         guard !bPackageDidStart else {
             BPackageLogger.bPackageShared.bPackageLog("流程", "BPackage 已启动，忽略重复调用")
             return
@@ -44,40 +42,26 @@ final class BPackage {
         self.bPackageNavigationController = bPackageNavigationController
         self.bPackageAPackageViewController = bPackageAPackageViewController
         self.bPackageAppearance = bPackageAppearance
-        bPackageCanApplyInitialRoute = !bPackageDefersInitialRouteUntilApproval
-        bPackageInitialRouteState = .bPackageLoading
-        if bPackageCanApplyInitialRoute {
-            bPackageShowLaunchCover()
-        } else {
-            BPackageLogger.bPackageShared.bPackageLog("协议门禁", "已提前请求启动接口；Agree 前仅缓存结果，不执行 A/B 路由")
-        }
-        Task { @MainActor in
-            do {
-                let bPackageCoordinator = try BPackageCoordinator(bPackageConfiguration: bPackageConfiguration,
-                                                                  bPackageAnalyticsAdapter: bPackageAnalyticsAdapter)
-                self.bPackageCoordinator = bPackageCoordinator
-                if let bPackagePendingInstallAttribution {
-                    bPackageCoordinator.bPackageEventReporter.bPackageReportInstallFromAttribution(
-                        bPackageResult: bPackagePendingInstallAttribution.bPackageResult,
-                        bPackageAdID: bPackagePendingInstallAttribution.bPackageAdID
-                    )
-                    self.bPackagePendingInstallAttribution = nil
-                }
-                let bPackageRoute = try await bPackageCoordinator.bPackageResolveInitialRoute()
-                bPackageInitialRouteState = .bPackageResolved(bPackageRoute)
-                bPackageProcessInitialRouteState()
-            } catch {
-                bPackageInitialRouteState = .bPackageFailed(error.localizedDescription)
-                bPackageProcessInitialRouteState()
-            }
-        }
-    }
+        self.bPackageOnAPackageRoute = bPackageOnAPackageRoute
+        bPackageShowLaunchCover()
 
-    func bPackageApproveInitialRouteApplication() {
-        guard bPackageDidStart, !bPackageCanApplyInitialRoute else { return }
-        bPackageCanApplyInitialRoute = true
-        BPackageLogger.bPackageShared.bPackageLog("协议门禁", "用户已同意 EULA，开始处理启动接口结果")
-        bPackageProcessInitialRouteState()
+        do {
+            let bPackageCoordinator = try BPackageCoordinator(
+                bPackageConfiguration: bPackageConfiguration,
+                bPackageAnalyticsAdapter: bPackageAnalyticsAdapter
+            )
+            self.bPackageCoordinator = bPackageCoordinator
+            if let bPackagePendingInstallAttribution {
+                bPackageCoordinator.bPackageEventReporter.bPackageReportInstallFromAttribution(
+                    bPackageResult: bPackagePendingInstallAttribution.bPackageResult,
+                    bPackageAdID: bPackagePendingInstallAttribution.bPackageAdID
+                )
+                self.bPackagePendingInstallAttribution = nil
+            }
+            bPackageStartNetworkMonitoring()
+        } catch {
+            BPackageLogger.bPackageShared.bPackageLog("启动失败", "BPackage 配置无效：\(error.localizedDescription)")
+        }
     }
 
     func bPackageDidRegisterForRemoteNotifications(bPackageDeviceToken: Data) {
@@ -108,41 +92,83 @@ final class BPackage {
     }
 
     private func bPackageApplyRoute(_ bPackageRoute: BPackageRoute) {
+        bPackageStopNetworkMonitoring()
+        bPackageRemoveLaunchCover()
         switch bPackageRoute {
         case .bPackageAPackage:
             BPackageLogger.bPackageShared.bPackageLog("完成", "进入 A 包")
+            let bPackageCallback = bPackageOnAPackageRoute
+            bPackageOnAPackageRoute = nil
+            bPackageCallback?()
         case .bPackageLogin(let bPackageMode):
+            bPackageOnAPackageRoute = nil
             bPackageShowQuickLogin(bPackageMode: bPackageMode)
         }
     }
 
-    private func bPackageProcessInitialRouteState() {
-        guard bPackageCanApplyInitialRoute else {
-            switch bPackageInitialRouteState {
-            case .bPackageResolved:
-                BPackageLogger.bPackageShared.bPackageLog("协议门禁", "启动接口结果已缓存，等待用户点击 Agree")
-            case .bPackageFailed:
-                BPackageLogger.bPackageShared.bPackageLog("协议门禁", "启动接口已结束，等待 Agree 后保留 A 包")
-            case .bPackageIdle, .bPackageLoading:
-                break
+    private func bPackageStartNetworkMonitoring() {
+        guard bPackageNetworkMonitor == nil else { return }
+        let bPackageMonitor = NWPathMonitor()
+        bPackageMonitor.pathUpdateHandler = { [weak self] bPackagePath in
+            let bPackageIsAvailable = bPackagePath.status == .satisfied
+            Task { @MainActor [weak self] in
+                self?.bPackageHandleNetworkAvailability(bPackageIsAvailable)
             }
-            return
         }
+        bPackageNetworkMonitor = bPackageMonitor
+        bPackageMonitor.start(queue: bPackageNetworkMonitorQueue)
+        BPackageLogger.bPackageShared.bPackageLog("网络门禁", "开始监听网络；有网后才请求启动接口")
+    }
 
-        switch bPackageInitialRouteState {
-        case .bPackageIdle:
-            break
-        case .bPackageLoading:
-            bPackageShowLaunchCover()
-        case .bPackageResolved(let bPackageRoute):
-            bPackageInitialRouteState = .bPackageIdle
-            bPackageRemoveLaunchCover()
-            bPackageApplyRoute(bPackageRoute)
-        case .bPackageFailed(let bPackageMessage):
-            bPackageInitialRouteState = .bPackageIdle
-            bPackageRemoveLaunchCover()
-            BPackageLogger.bPackageShared.bPackageLog("启动失败", "\(bPackageMessage)，保留 A 包页面")
+    private func bPackageHandleNetworkAvailability(_ bPackageIsAvailable: Bool) {
+        bPackageNetworkIsAvailable = bPackageIsAvailable
+        if bPackageIsAvailable {
+            BPackageLogger.bPackageShared.bPackageLog("网络门禁", "网络可用，准备请求启动接口")
+            bPackageBeginInitialRequestIfNeeded()
+        } else {
+            bPackageRetryTask?.cancel()
+            bPackageRetryTask = nil
+            BPackageLogger.bPackageShared.bPackageLog("网络门禁", "网络不可用，保持启动等待页，不处理 A/B 路由")
         }
+    }
+
+    private func bPackageBeginInitialRequestIfNeeded() {
+        guard bPackageNetworkIsAvailable,
+              !bPackageDidBeginInitialRequest,
+              let bPackageCoordinator else { return }
+        bPackageDidBeginInitialRequest = true
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                let bPackageRoute = try await bPackageCoordinator.bPackageResolveInitialRoute()
+                self.bPackageApplyRoute(bPackageRoute)
+            } catch {
+                self.bPackageDidBeginInitialRequest = false
+                BPackageLogger.bPackageShared.bPackageLog(
+                    "启动失败",
+                    "\(error.localizedDescription)；不误判为 A 包，网络可用时稍后重试"
+                )
+                self.bPackageScheduleInitialRequestRetry()
+            }
+        }
+    }
+
+    private func bPackageScheduleInitialRequestRetry() {
+        guard bPackageNetworkIsAvailable else { return }
+        bPackageRetryTask?.cancel()
+        bPackageRetryTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 5_000_000_000)
+            guard !Task.isCancelled else { return }
+            self?.bPackageBeginInitialRequestIfNeeded()
+        }
+    }
+
+    private func bPackageStopNetworkMonitoring() {
+        bPackageRetryTask?.cancel()
+        bPackageRetryTask = nil
+        bPackageNetworkMonitor?.cancel()
+        bPackageNetworkMonitor = nil
+        bPackageNetworkIsAvailable = false
     }
 
     private func bPackageShowQuickLogin(bPackageMode: BPackageLoginMode) {

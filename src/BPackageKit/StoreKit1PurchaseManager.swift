@@ -54,18 +54,18 @@ final class StoreKit1PurchaseManager: NSObject, SKProductsRequestDelegate, SKPay
     func bPackageDetachUI() { bPackageOnStateChange = nil }
 
     func bPackagePurchase(bPackageBatchNo: String, bPackageOrderCode: String) {
-        guard !bPackageBatchNo.isEmpty else { bPackageNotify(.bPackageFailure("H5 batchNo 为空，无法查询商品")); return }
-        guard !bPackageOrderCode.isEmpty else { bPackageNotify(.bPackageFailure("H5 orderCode 为空，无法生成 callbackResult")); return }
-        guard SKPaymentQueue.canMakePayments() else { bPackageNotify(.bPackageFailure("当前设备不允许 App 内购买")); return }
+        guard !bPackageBatchNo.isEmpty else { bPackageNotify(.bPackageFailure("The product ID is missing.")); return }
+        guard !bPackageOrderCode.isEmpty else { bPackageNotify(.bPackageFailure("The order number is missing.")); return }
+        guard SKPaymentQueue.canMakePayments() else { bPackageNotify(.bPackageFailure("In-App Purchases are not allowed on this device.")); return }
         guard SKPaymentQueue.default().transactions.allSatisfy({ $0.transactionState != .purchasing && $0.transactionState != .deferred }) else {
-            bPackageNotify(.bPackageFailure("已有一笔支付正在处理中，请勿重复发起")); return
+            bPackageNotify(.bPackageFailure("Another payment is already in progress.")); return
         }
         bPackageRememberOwnedProductID(bPackageBatchNo)
         bPackageSaveContext(BPackagePaymentContext(bPackageBatchNo: bPackageBatchNo,
                                                    bPackageOrderCode: bPackageOrderCode,
                                                    bPackageAmount: nil,
                                                    bPackageCurrency: nil))
-        bPackageNotify(.bPackageLoading("正在获取商品信息…"))
+        bPackageNotify(.bPackageLoading("Loading product information…"))
         BPackageLogger.bPackageShared.bPackageLog("StoreKit1", "查询 BPackage 商品 Product ID=\(bPackageBatchNo)")
         let bPackageRequest = SKProductsRequest(productIdentifiers: [bPackageBatchNo])
         bPackageProductRequest = bPackageRequest
@@ -79,13 +79,13 @@ final class StoreKit1PurchaseManager: NSObject, SKProductsRequestDelegate, SKPay
               let bPackageProduct = response.products.first(where: { $0.productIdentifier == bPackageContext.bPackageBatchNo }) else {
             let bPackageInvalid = response.invalidProductIdentifiers.joined(separator: ",")
             bPackageClearContext()
-            bPackageNotify(.bPackageFailure("未找到 App Store 商品。无效商品ID：\(bPackageInvalid)"))
+            bPackageNotify(.bPackageFailure("The App Store product was not found. Invalid product ID: \(bPackageInvalid)"))
             return
         }
         guard let bPackageCurrency = bPackageProduct.priceLocale.currencyCode,
               !bPackageCurrency.isEmpty else {
             bPackageClearContext()
-            bPackageNotify(.bPackageFailure("App Store 商品未返回有效币种，无法安全上报 Purchase"))
+            bPackageNotify(.bPackageFailure("The App Store did not return a valid currency."))
             return
         }
         bPackageContext.bPackageAmount = bPackageProduct.price.stringValue
@@ -93,7 +93,7 @@ final class StoreKit1PurchaseManager: NSObject, SKProductsRequestDelegate, SKPay
         bPackageSaveContext(bPackageContext)
         let bPackagePayment = SKMutablePayment(product: bPackageProduct)
         bPackagePayment.quantity = 1
-        bPackageNotify(.bPackageLoading("等待用户确认支付…"))
+        bPackageNotify(.bPackageLoading("Waiting for payment confirmation…"))
         BPackageLogger.bPackageShared.bPackageLog("StoreKit1", "商品查询成功：\(bPackageProduct.productIdentifier)，价格=\(bPackageProduct.price)，加入支付队列")
         SKPaymentQueue.default().add(bPackagePayment)
     }
@@ -102,11 +102,11 @@ final class StoreKit1PurchaseManager: NSObject, SKProductsRequestDelegate, SKPay
         if request === bPackageReceiptRefreshRequest {
             bPackageReceiptRefreshRequest = nil
             bPackageWaitingForReceipt.removeAll()
-            bPackageNotify(.bPackageFailure("刷新 App Store Receipt 失败：\(error.localizedDescription)。交易未 finish"))
+            bPackageNotify(.bPackageFailure("Unable to refresh the App Store receipt: \(error.localizedDescription)"))
         } else {
             bPackageProductRequest = nil
             bPackageClearContext()
-            bPackageNotify(.bPackageFailure("查询 App Store 商品失败：\(error.localizedDescription)"))
+            bPackageNotify(.bPackageFailure("Unable to load the App Store product: \(error.localizedDescription)"))
         }
     }
 
@@ -126,9 +126,9 @@ final class StoreKit1PurchaseManager: NSObject, SKProductsRequestDelegate, SKPay
             }
             switch bPackageTransaction.transactionState {
             case .purchasing:
-                bPackageNotify(.bPackageLoading("正在支付…"))
+                bPackageNotify(.bPackageLoading("Processing payment…"))
             case .deferred:
-                bPackageNotify(.bPackageLoading("支付等待批准…"))
+                bPackageNotify(.bPackageLoading("Payment is awaiting approval…"))
             case .purchased, .restored:
                 bPackageProcessPurchasedTransaction(bPackageTransaction)
             case .failed:
@@ -139,17 +139,17 @@ final class StoreKit1PurchaseManager: NSObject, SKProductsRequestDelegate, SKPay
                     BPackageLogger.bPackageShared.bPackageLog("StoreKit1", "用户取消支付")
                     bPackageNotify(.bPackageCancelled)
                 } else {
-                    bPackageNotify(.bPackageFailure("支付失败：\(bPackageTransaction.error?.localizedDescription ?? "未知错误")"))
+                    bPackageNotify(.bPackageFailure("Payment failed: \(bPackageTransaction.error?.localizedDescription ?? "Unknown error")"))
                 }
             @unknown default:
-                bPackageNotify(.bPackageFailure("收到未知 StoreKit 交易状态"))
+                bPackageNotify(.bPackageFailure("The App Store returned an unknown transaction state."))
             }
         }
     }
 
     private func bPackageProcessPurchasedTransaction(_ bPackageTransaction: SKPaymentTransaction) {
         guard let bPackageTransactionID = bPackageTransaction.transactionIdentifier, !bPackageTransactionID.isEmpty else {
-            bPackageNotify(.bPackageFailure("StoreKit 未返回 transactionIdentifier，交易暂不 finish")); return
+            bPackageNotify(.bPackageFailure("The App Store did not return a transaction identifier. The transaction will be retried later.")); return
         }
         guard !bPackageProcessingTransactions.contains(bPackageTransactionID) else { return }
         guard let bPackageAPI else {
@@ -157,15 +157,15 @@ final class StoreKit1PurchaseManager: NSObject, SKProductsRequestDelegate, SKPay
             return
         }
         guard let bPackageContext = bPackageLoadContext() else {
-            bPackageNotify(.bPackageFailure("缺少 H5 orderCode，无法验单；交易未 finish")); return
+            bPackageNotify(.bPackageFailure("The order number is missing. Verification will be retried later.")); return
         }
         guard bPackageContext.bPackageBatchNo == bPackageTransaction.payment.productIdentifier else {
-            bPackageNotify(.bPackageFailure("交易商品与 batchNo 不一致；交易未 finish")); return
+            bPackageNotify(.bPackageFailure("The purchased product does not match the order. Verification will be retried later.")); return
         }
         guard let bPackageReceipt = bPackageReadReceipt() else {
             if !bPackageWaitingForReceipt.contains(where: { $0 === bPackageTransaction }) { bPackageWaitingForReceipt.append(bPackageTransaction) }
             if bPackageReceiptRefreshRequest == nil {
-                bPackageNotify(.bPackageLoading("正在刷新 App Store Receipt…"))
+                bPackageNotify(.bPackageLoading("Refreshing the App Store receipt…"))
                 let bPackageRequest = SKReceiptRefreshRequest()
                 bPackageReceiptRefreshRequest = bPackageRequest
                 bPackageRequest.delegate = self
@@ -175,7 +175,7 @@ final class StoreKit1PurchaseManager: NSObject, SKProductsRequestDelegate, SKPay
         }
         let bPackageCallbackResult = bPackageMakeCallbackResult(bPackageOrderCode: bPackageContext.bPackageOrderCode)
         bPackageProcessingTransactions.insert(bPackageTransactionID)
-        bPackageNotify(.bPackageLoading("支付成功，正在服务端验单…"))
+        bPackageNotify(.bPackageLoading("Payment completed. Verifying purchase…"))
         BPackageLogger.bPackageShared.bPackageLog("StoreKit1", "调用 3.2.5 验单；收据与订单信息已脱敏")
         Task {
             do {
@@ -188,7 +188,7 @@ final class StoreKit1PurchaseManager: NSObject, SKProductsRequestDelegate, SKPay
                           let bPackageAmount = Decimal(string: bPackageAmountText),
                           let bPackageCurrency = bPackageContext.bPackageCurrency,
                           !bPackageCurrency.isEmpty else {
-                        self.bPackageNotify(.bPackageFailure("验单成功，但缺少 StoreKit 实际金额或币种；交易暂不 finish"))
+                        self.bPackageNotify(.bPackageFailure("The purchase was verified, but its price or currency is missing. The transaction will be retried later."))
                         return
                     }
                     self.bPackageEventReporter?.bPackageReportPurchase(
@@ -198,13 +198,13 @@ final class StoreKit1PurchaseManager: NSObject, SKProductsRequestDelegate, SKPay
                     SKPaymentQueue.default().finishTransaction(bPackageTransaction)
                     self.bPackageClearContext()
                     BPackageLogger.bPackageShared.bPackageLog("StoreKit1", "验单 code=0000；触发 Purchase 后已 finishTransaction")
-                    self.bPackageNotify(.bPackageSuccess("支付并验单成功"))
+                    self.bPackageNotify(.bPackageSuccess("Payment successful"))
                 }
             } catch {
                 await MainActor.run {
                     self.bPackageProcessingTransactions.remove(bPackageTransactionID)
                     BPackageLogger.bPackageShared.bPackageLog("StoreKit1", "验单失败：\(error.localizedDescription)。交易未 finish")
-                    self.bPackageNotify(.bPackageFailure("支付已完成，但服务端验单失败：\(error.localizedDescription)\n交易已保留，可稍后重试"))
+                    self.bPackageNotify(.bPackageFailure("Payment completed, but verification failed: \(error.localizedDescription)\nThe transaction will be retried later."))
                 }
             }
         }

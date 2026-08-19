@@ -44,6 +44,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate, AdjustDelegate {
             bPackageAdjustConfig.enableSendingInBackground()
             bPackageAdjustConfig.enableCostDataInAttribution()
             Adjust.initSdk(bPackageAdjustConfig)
+            Task {
+                _ = await APackageBAnalyticsAdapter.bPackageShared.bPackageResolveAdjustAdID()
+            }
         }
 
         UNUserNotificationCenter.current().delegate = self

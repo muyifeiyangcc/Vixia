@@ -7,9 +7,9 @@ final class BPackageStorage {
     private init() {}
 
     private enum BPackageSecureKey: String {
-        case bPackageDeviceID = "devid"
-        case bPackageLoginToken = "token"
-        case bPackagePassword = "password"
+        case bPackageDeviceID = "devid9999"
+        case bPackageLoginToken = "token99"
+        case bPackagePassword = "password9"
     }
 
     var bPackageDeviceID: String { get { bPackageRead(.bPackageDeviceID) ?? "" } set { bPackageSave(newValue, bPackageKey: .bPackageDeviceID) } }
@@ -18,6 +18,7 @@ final class BPackageStorage {
     var bPackageIsBPackage: Bool { get { UserDefaults.standard.bool(forKey: "bPackage.isBPackage") } set { UserDefaults.standard.set(newValue, forKey: "bPackage.isBPackage") } }
     var bPackagePushToken: String { get { UserDefaults.standard.string(forKey: "bPackage.pushToken") ?? "" } set { UserDefaults.standard.set(newValue, forKey: "bPackage.pushToken") } }
     var bPackageH5URL: String { get { UserDefaults.standard.string(forKey: "bPackage.h5URL") ?? "" } set { UserDefaults.standard.set(newValue, forKey: "bPackage.h5URL") } }
+    var bPackageAdjustAdID: String { get { UserDefaults.standard.string(forKey: "bPackage.adjustAdID.v1") ?? "" } set { UserDefaults.standard.set(newValue, forKey: "bPackage.adjustAdID.v1") } }
     var bPackageFacebookAppID: String { get { UserDefaults.standard.string(forKey: "bPackage.facebookAppID") ?? "" } set { UserDefaults.standard.set(newValue, forKey: "bPackage.facebookAppID") } }
     var bPackageFacebookClientToken: String { get { UserDefaults.standard.string(forKey: "bPackage.facebookClientToken") ?? "" } set { UserDefaults.standard.set(newValue, forKey: "bPackage.facebookClientToken") } }
     var bPackageFacebookDisplayName: String { get { UserDefaults.standard.string(forKey: "bPackage.facebookDisplayName") ?? "" } set { UserDefaults.standard.set(newValue, forKey: "bPackage.facebookDisplayName") } }

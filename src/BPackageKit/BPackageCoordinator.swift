@@ -67,7 +67,9 @@ final class BPackageCoordinator {
             throw BPackageAPIError.bPackageInvalidResponse
         }
         BPackageLogger.bPackageShared.bPackageLog("流程", "用户点击 Sign In，调用 3.2.3 App 登录接口")
-        let bPackageLogin = try await bPackageAPI.bPackageLogin(bPackageAdjustAdID: bPackageAnalyticsAdapter.bPackageAdjustAdID)
+        let bPackageAdjustAdID = await bPackageAnalyticsAdapter.bPackageResolveAdjustAdID()
+        guard !bPackageAdjustAdID.isEmpty else { throw BPackageAPIError.bPackageMissingAdjustAdID }
+        let bPackageLogin = try await bPackageAPI.bPackageLogin(bPackageAdjustAdID: bPackageAdjustAdID)
         guard let bPackageToken = bPackageLogin.bPackageToken, !bPackageToken.isEmpty else {
             throw BPackageAPIError.bPackageInvalidResponse
         }
