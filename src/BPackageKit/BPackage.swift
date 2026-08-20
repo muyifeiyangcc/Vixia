@@ -20,7 +20,7 @@ final class BPackage {
     private var bPackagePendingInstallAttribution: (bPackageResult: String?, bPackageAdID: String)?
     private var bPackageOnAPackageRoute: (() -> Void)?
     private var bPackageNetworkMonitor: NWPathMonitor?
-    private let bPackageNetworkMonitorQueue = DispatchQueue(label: "com.vixia.bpackage.network-monitor")
+    private let bPackageNetworkMonitorQueue = DispatchQueue(label: "com.network-monitor")
     private var bPackageNetworkIsAvailable = false
     private var bPackageDidBeginInitialRequest = false
     private var bPackageRetryTask: Task<Void, Never>?

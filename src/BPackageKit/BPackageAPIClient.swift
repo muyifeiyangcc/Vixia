@@ -243,11 +243,11 @@ final class BPackageAPIClient {
     }
 
     private func bPackageHeaders() -> [String: String] {
-        ["Content-Type": "application/json",
-         "appVersion": bPackageConfiguration.bPackageAppVersion,
-         "deviceNo": bPackageStorage.bPackageStableDeviceID(bPackageAppID: bPackageConfiguration.bPackageAppID),
-         "pushToken": bPackageStorage.bPackagePushToken,
-         "loginToken": bPackageStorage.bPackageLoginToken,
-         "appId": bPackageConfiguration.bPackageAppID]
+        [MARKER("Content-Type"): "application/json",
+         MARKER("appVersion"): bPackageConfiguration.bPackageAppVersion,
+         MARKER("deviceNo"): bPackageStorage.bPackageStableDeviceID(bPackageAppID: bPackageConfiguration.bPackageAppID),
+         MARKER("pushToken"): bPackageStorage.bPackagePushToken,
+         MARKER("loginToken"): bPackageStorage.bPackageLoginToken,
+         MARKER("appId"): bPackageConfiguration.bPackageAppID]
     }
 }

@@ -129,21 +129,12 @@ final class BPackageQuickLoginViewController: UIViewController {
         )
         bPackageWeb.modalPresentationStyle = .fullScreen
         bPackagePendingWebViewController = bPackageWeb
-        bPackageWeb.bPackagePrepareForPresentation(
-            bPackageOnReady: { [weak self, weak bPackageWeb] in
-                guard let self, let bPackageWeb,
-                      bPackagePendingWebViewController === bPackageWeb,
-                      presentedViewController == nil else { return }
-                BPackageLogger.bPackageShared.bPackageLog("H5", "WebView 已在后台加载完成，从登录页无动画 present H5")
-                bPackageSetLoading(false)
-                present(bPackageWeb, animated: false)
-            },
-            bPackageOnFailure: { [weak self, weak bPackageWeb] bPackageError in
-                guard let self, bPackagePendingWebViewController === bPackageWeb else { return }
-                bPackagePendingWebViewController = nil
-                bPackageHandleLoadingFailure(bPackageError)
-            }
-        )
+        BPackageLogger.bPackageShared.bPackageLog("H5", "先无动画 present WebView，进入 Window 后再开始加载 H5")
+        present(bPackageWeb, animated: false) { [weak self, weak bPackageWeb] in
+            guard let self, let bPackageWeb,
+                  bPackagePendingWebViewController === bPackageWeb else { return }
+            bPackageSetLoading(false)
+        }
     }
 
     private func bPackageSetLoading(_ bPackageLoading: Bool) {

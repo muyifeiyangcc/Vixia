@@ -12,6 +12,7 @@ final class BPackageWebViewController: UIViewController, WKNavigationDelegate, W
     private let bPackageBackgroundImage: UIImage?
     private let bPackageOnClose: () -> Void
     private var bPackageDidCompleteFirstLoad = false
+    private var bPackageDidStartInitialLoad = false
     private var bPackageDidRequestPushPermission = false
     private var bPackageDidStartRecordingProtection = false
     private var bPackageIsClosing = false
@@ -29,8 +30,6 @@ final class BPackageWebViewController: UIViewController, WKNavigationDelegate, W
     private let bPackagePaymentToastView = UIView()
     private let bPackagePaymentToastLabel = UILabel()
     private var bPackagePaymentToastDismissWorkItem: DispatchWorkItem?
-    private var bPackageOnInitialLoadReady: (() -> Void)?
-    private var bPackageOnInitialLoadFailure: ((Error) -> Void)?
 
     private lazy var bPackageWebView: WKWebView = {
         let bPackageController = WKUserContentController()
@@ -68,29 +67,18 @@ final class BPackageWebViewController: UIViewController, WKNavigationDelegate, W
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    func bPackagePrepareForPresentation(bPackageOnReady: @escaping () -> Void,
-                                        bPackageOnFailure: @escaping (Error) -> Void) {
-        if bPackageDidCompleteFirstLoad {
-            bPackageOnReady()
-            return
-        }
-        bPackageOnInitialLoadReady = bPackageOnReady
-        bPackageOnInitialLoadFailure = bPackageOnFailure
-        loadViewIfNeeded()
-    }
-
     override func viewDidLoad() {
         super.viewDidLoad()
         bPackageConfigureWebView()
         bPackageConfigureLoadingView()
         bPackageConfigurePaymentOverlay()
         bPackageConfigurePaymentToast()
+        bPackageShowWebLoading(bPackageMessage: "Loading…")
         StoreKit1PurchaseManager.bPackageShared.bPackageConfigure(
             bPackageAPI: bPackageAPI,
             bPackageEventReporter: bPackageEventReporter
         ) { [weak self] bPackageState in self?.bPackageHandlePaymentState(bPackageState) }
-        BPackageLogger.bPackageShared.bPackageLog("H5", "开始加载加密业务页面")
-        bPackageBeginInitialLoad()
+        BPackageLogger.bPackageShared.bPackageLog("H5", "WebView 页面已创建，等待进入 Window 后加载业务页面")
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -111,6 +99,7 @@ final class BPackageWebViewController: UIViewController, WKNavigationDelegate, W
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        bPackageBeginInitialLoadIfNeeded()
         if !bPackageDidStartRecordingProtection {
             bPackageDidStartRecordingProtection = true
             #if canImport(ScreenShield)
@@ -120,6 +109,10 @@ final class BPackageWebViewController: UIViewController, WKNavigationDelegate, W
             BPackageLogger.bPackageShared.bPackageLog("ScreenShield", "未安装 ScreenShield，H5 使用普通内容容器")
             #endif
         }
+        bPackageRequestPushPermissionIfNeeded()
+    }
+
+    private func bPackageRequestPushPermissionIfNeeded() {
         guard bPackageDidCompleteFirstLoad, !bPackageDidRequestPushPermission else { return }
         bPackageDidRequestPushPermission = true
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { bPackageGranted, bPackageError in
@@ -225,7 +218,10 @@ final class BPackageWebViewController: UIViewController, WKNavigationDelegate, W
         ])
     }
 
-    private func bPackageBeginInitialLoad() {
+    private func bPackageBeginInitialLoadIfNeeded() {
+        guard !bPackageDidStartInitialLoad, view.window != nil else { return }
+        bPackageDidStartInitialLoad = true
+        BPackageLogger.bPackageShared.bPackageLog("H5", "WebView 已进入 Window，开始加载加密业务页面")
         bPackageWebView.load(URLRequest(url: bPackageURL))
     }
 
@@ -240,11 +236,8 @@ final class BPackageWebViewController: UIViewController, WKNavigationDelegate, W
         bPackageWebBackgroundImageView?.removeFromSuperview()
         BPackageLogger.bPackageShared.bPackageLog("H5", "首次页面加载完成；已移除 H5 Loading 背景，避免透明区域继续显示登录底图")
         bPackageDidCompleteFirstLoad = true
-        BPackageLogger.bPackageShared.bPackageLog("H5", "通知登录页展示已加载完成的 WebView")
-        let bPackageReady = bPackageOnInitialLoadReady
-        bPackageOnInitialLoadReady = nil
-        bPackageOnInitialLoadFailure = nil
-        bPackageReady?()
+        BPackageLogger.bPackageShared.bPackageLog("H5", "首次页面加载完成，隐藏 Loading 并显示 H5")
+        bPackageRequestPushPermissionIfNeeded()
     }
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
@@ -407,12 +400,6 @@ final class BPackageWebViewController: UIViewController, WKNavigationDelegate, W
         let bPackageNSError = bPackageError as NSError
         guard bPackageNSError.domain != NSURLErrorDomain || bPackageNSError.code != NSURLErrorCancelled else { return }
         BPackageLogger.bPackageShared.bPackageLog("H5错误", bPackageError.localizedDescription)
-        if !bPackageDidCompleteFirstLoad, let bPackageFailure = bPackageOnInitialLoadFailure {
-            bPackageOnInitialLoadReady = nil
-            bPackageOnInitialLoadFailure = nil
-            bPackageFailure(bPackageError)
-            return
-        }
         bPackageLoadingSpinner.stopAnimating()
         bPackageLoadingLabel.text = "页面加载失败\n\(bPackageError.localizedDescription)"
         bPackageRetryButton.isHidden = false

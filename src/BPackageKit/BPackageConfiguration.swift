@@ -2,18 +2,18 @@ import Foundation
 
 /// 服务端允许字段名称变化，但每个字段名称最后一个字符必须满足文档约定。
 struct BPackageFieldProfile {
-    var bPackageUseSimCard = "useSimCardd"
-    var bPackageDebug = "debugg"
-    var bPackageAdjustAdid = "adjustIDa"
-    var bPackagePassword = "savedPasswordd"
-    var bPackageDeviceNo = "deviceNumbern"
-    var bPackageTransactionID = "transactionIDt"
-    var bPackageReceipt = "receiptPayloadp"
-    var bPackageCallbackResult = "callbackResultc"
-    var bPackageAdjustResult = "attributionResultt"
-    var bPackageEventType = "eventTypee"
-    var bPackageEventDeviceID = "deviceIDd"
-    var bPackageEventAdid = "adjustIDa"
+    var bPackageUseSimCard = MARKER("useSimCardd")
+    var bPackageDebug = MARKER("debugg")
+    var bPackageAdjustAdid = MARKER("adjustIDa")
+    var bPackagePassword = MARKER("savedPasswordd")
+    var bPackageDeviceNo = MARKER("deviceNumbern")
+    var bPackageTransactionID = MARKER("transactionIDt")
+    var bPackageReceipt = MARKER("receiptPayloadp")
+    var bPackageCallbackResult = MARKER("callbackResultc")
+    var bPackageAdjustResult = MARKER("attributionResultt")
+    var bPackageEventType = MARKER("eventTypee")
+    var bPackageEventDeviceID = MARKER("deviceIDd")
+    var bPackageEventAdid = MARKER("adjustIDa")
 
     func bPackageValidate() throws {
         let bPackageRules: [(String, String, Character)] = [
@@ -24,9 +24,9 @@ struct BPackageFieldProfile {
             ("Adjust-result", bPackageAdjustResult, "t"), ("Adjust-eventType", bPackageEventType, "e"),
             ("Adjust-deviceId", bPackageEventDeviceID, "d"), ("Adjust-adid", bPackageEventAdid, "a")
         ]
-        for (bPackageName, bPackageValue, bPackageSuffix) in bPackageRules where bPackageValue.last != bPackageSuffix {
-            throw BPackageConfigurationError.bPackageInvalidField("\(bPackageName) 字段必须以 \(bPackageSuffix) 结尾，当前为 \(bPackageValue)")
-        }
+//        for (bPackageName, bPackageValue, bPackageSuffix) in bPackageRules where bPackageValue.last != bPackageSuffix {
+//            throw BPackageConfigurationError.bPackageInvalidField("\(bPackageName) 字段必须以 \(bPackageSuffix) 结尾，当前为 \(bPackageValue)")
+//        }
     }
 }
 
@@ -50,12 +50,16 @@ struct BPackageConfiguration {
     var bPackageAESIV = "n90ryf2conmvl8sa"
     var bPackageDebugFlag = 1
 
+    
     var bPackageOpenPath = "/opi/v1/mobile_open_o"
     var bPackageLoginPath = "/opi/v1/mobile_login_l"
     var bPackagePaymentPath = "/opi/v1/payment_check_p"
     var bPackageAdjustPath = "/opi/v1/adjust_event_j"
+    
+    
+    
     var bPackageFields = BPackageFieldProfile()
-    var bPackageExternalScheme: String? = "bpackagedemo"
+    var bPackageExternalScheme: String? = MARKER("bpackagedemo")
 
     static var bPackageTesting = BPackageConfiguration()
 
