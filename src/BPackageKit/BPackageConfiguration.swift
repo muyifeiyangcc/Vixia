@@ -44,10 +44,10 @@ enum BPackageConfigurationError: LocalizedError {
 struct BPackageConfiguration {
     /// Demo 页面输入；迁移到 A 包时直接填正式接口根地址。
     var bPackageBaseURL: URL? = nil
-    var bPackageAppID = "44332211"
+    var bPackageAppID = "18893624"
     var bPackageAppVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
-    var bPackageAESKey = "518486he8pzgbjsk"
-    var bPackageAESIV = "614436p28qzhkjsl"
+    var bPackageAESKey = "q1iobx57oxclzunt"
+    var bPackageAESIV = "n90ryf2conmvl8sa"
     var bPackageDebugFlag = 1
 
     var bPackageOpenPath = "/opi/v1/mobile_open_o"

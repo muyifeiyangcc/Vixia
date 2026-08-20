@@ -11,9 +11,9 @@ enum BPackageProfile {
     static var bPackageConfiguration: BPackageConfiguration {
         var bPackageConfig = BPackageConfiguration()
         bPackageConfig.bPackageBaseURL = URL(string: "https://opi.iuf7rxjm.link/")
-        bPackageConfig.bPackageAppID = "44332211"
-        bPackageConfig.bPackageAESKey = "518486he8pzgbjsk"
-        bPackageConfig.bPackageAESIV = "614436p28qzhkjsl"
+        bPackageConfig.bPackageAppID = "18893624"
+        bPackageConfig.bPackageAESKey = "q1iobx57oxclzunt"
+        bPackageConfig.bPackageAESIV = "n90ryf2conmvl8sa"
         bPackageConfig.bPackageDebugFlag = 1
         bPackageConfig.bPackageExternalScheme = "vixia"
         return bPackageConfig
