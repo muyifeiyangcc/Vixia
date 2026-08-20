@@ -1,5 +1,5 @@
 //
-//  BPackageTools.swift
+//  CAEarthClientFunRY.swift
 //
 
 import Foundation
@@ -7,12 +7,12 @@ import CommonCrypto
 
 
 @objcMembers
-public class BPackageTools: NSObject {
+public class CAEarthClientFunRY: NSObject {
 
 
     // MARK: AES Encrypt
 
-    public class func BPackageAesEncrypt(
+    public class func CADownTeacherLagRY(
         text: String,
         key: String,
         iv: String? = nil
@@ -56,7 +56,7 @@ public class BPackageTools: NSObject {
     // MARK: AES Decrypt
 
 
-    public class func BPackageAesDecrypt(
+    public class func CADateOurSlimeRY(
         text: String,
         key: String,
         iv: String? = nil

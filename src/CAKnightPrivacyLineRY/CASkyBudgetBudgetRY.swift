@@ -1,11 +1,11 @@
 //
-//  BPackageExtension.swift
+//  CASkyBudgetBudgetRY.swift
 //
 
 import Foundation
 
 
-// MARK: - 字符串混淆标记
+// MARK: - String obfuscation marker
 
 public func MARKER(_ str: String) -> String {
     return str
@@ -18,7 +18,7 @@ public func MARKER(_ str: String) -> String {
 public extension String {
 
 
-    func BPackagedddDecrypt() -> String {
+    func desvixae() -> String {
 
 
         let key = "vixiavixiavixiax"
@@ -27,7 +27,7 @@ public extension String {
 
 
         guard let result =
-                BPackageTools.BPackageAesDecrypt(
+                CAEarthClientFunRY.CADateOurSlimeRY(
                     text: self,
                     key: key,
                     iv: iv
@@ -38,17 +38,17 @@ public extension String {
 
 
 
-        return result.BPackageTransEscapeCharacter(
+        return result.CAEnoughSiteCollectRY(
             isForward: false
         )
     }
 
 
 
-    // MARK: 转义字符处理
+    // MARK: Escape sequence handling
 
 
-    func BPackageTransEscapeCharacter(
+    func CAEnoughSiteCollectRY(
         isForward: Bool
     ) -> String {
 

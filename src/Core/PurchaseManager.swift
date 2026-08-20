@@ -78,7 +78,7 @@ final class PurchaseManager: NSObject, SKProductsRequestDelegate, SKPaymentTrans
 
     func paymentQueue(_ queue: SKPaymentQueue, updatedTransactions transactions: [SKPaymentTransaction]) {
         for transaction in transactions {
-            if StoreKit1PurchaseManager.bPackageShared.bPackageOwnsProductIdentifier(
+            if StoreKit1PurchaseManager.CABootHousePotionRY.CAAntiPhonePlaneRY(
                 transaction.payment.productIdentifier
             ) {
                 continue

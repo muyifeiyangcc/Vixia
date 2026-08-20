@@ -2,9 +2,9 @@ import UIKit
 import Darwin
 
 final class AppCoordinator {
-    struct BPackageNavigationContext {
-        let bPackageNavigationController: UINavigationController
-        let bPackageAPackageViewController: UIViewController
+    struct CAAirHatThemRY {
+        let CACitySnowGrapeRY: UINavigationController
+        let CAThreeShirtCoffeeRY: UIViewController
     }
 
     private let window: UIWindow
@@ -12,11 +12,11 @@ final class AppCoordinator {
     private let accounts = LocalAccountStore.shared
     private let persistence = UserDefaultsEULAPersistence()
     private var authNavigation = UINavigationController()
-    private var bPackageDidRequestEULAPresentation = false
+    private var CAUpLagXrcRY = false
 
     init(window: UIWindow, store: LocalStore = .shared) { self.window = window; self.store = store }
 
-    func start(bPackageDefersEULAUntilRouteDecision: Bool = false) {
+    func start(CAKidPaperWindRY: Bool = false) {
         if !store.hasExplicitlySignedOut,
            store.signedInUserID != nil,
            accounts.currentEmail != nil {
@@ -25,16 +25,16 @@ final class AppCoordinator {
             showLogin()
         }
         window.makeKeyAndVisible()
-        if !bPackageDefersEULAUntilRouteDecision {
-            bPackagePresentEULAIfNeeded()
+        if !CAKidPaperWindRY {
+            CAMeDirectorMagicRY()
         }
     }
 
     /// 时间门禁未开启时直接调用；时间门禁开启时，只能在启动接口明确判定为 A 包后调用。
-    func bPackagePresentEULAIfNeeded() {
-        guard !bPackageDidRequestEULAPresentation,
+    func CAMeDirectorMagicRY() {
+        guard !CAUpLagXrcRY,
               case .presentEULA = AuthLaunchGate.decision(using: persistence) else { return }
-        bPackageDidRequestEULAPresentation = true
+        CAUpLagXrcRY = true
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             self.window.rootViewController?.present(
@@ -50,22 +50,22 @@ final class AppCoordinator {
         window.rootViewController = authNavigation
     }
 
-    func bPackageNavigationContext() -> BPackageNavigationContext? {
-        if let bPackageNavigationController = window.rootViewController as? UINavigationController,
-           let bPackageRoot = bPackageNavigationController.viewControllers.first {
-            return BPackageNavigationContext(
-                bPackageNavigationController: bPackageNavigationController,
-                bPackageAPackageViewController: bPackageRoot
+    func CAGrapeYearFlowerRY() -> CAAirHatThemRY? {
+        if let CACitySnowGrapeRY = window.rootViewController as? UINavigationController,
+           let CAChairDesireCanRY = CACitySnowGrapeRY.viewControllers.first {
+            return CAAirHatThemRY(
+                CACitySnowGrapeRY: CACitySnowGrapeRY,
+                CAThreeShirtCoffeeRY: CAChairDesireCanRY
             )
         }
 
-        guard let bPackageTabs = window.rootViewController as? UITabBarController else { return nil }
-        bPackageTabs.loadViewIfNeeded()
-        guard let bPackageNavigationController = bPackageTabs.selectedViewController as? UINavigationController,
-              let bPackageRoot = bPackageNavigationController.viewControllers.first else { return nil }
-        return BPackageNavigationContext(
-            bPackageNavigationController: bPackageNavigationController,
-            bPackageAPackageViewController: bPackageRoot
+        guard let CALeaveDemonstrateGoodRY = window.rootViewController as? UITabBarController else { return nil }
+        CALeaveDemonstrateGoodRY.loadViewIfNeeded()
+        guard let CACitySnowGrapeRY = CALeaveDemonstrateGoodRY.selectedViewController as? UINavigationController,
+              let CAChairDesireCanRY = CACitySnowGrapeRY.viewControllers.first else { return nil }
+        return CAAirHatThemRY(
+            CACitySnowGrapeRY: CACitySnowGrapeRY,
+            CAThreeShirtCoffeeRY: CAChairDesireCanRY
         )
     }
 

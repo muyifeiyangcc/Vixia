@@ -22,35 +22,35 @@ class AppDelegate: UIResponder, UIApplicationDelegate, AdjustDelegate {
         IQKeyboardManager.shared.isEnabled = true
         IQKeyboardManager.shared.resignOnTouchOutside = true
 
-        // MARK: - BPackage Begin
-        StoreKit1PurchaseManager.bPackageShared.bPackageStartObserving()
+        // MARK: - CAResBottleMyRY Begin
+        StoreKit1PurchaseManager.CABootHousePotionRY.CASpellBrushSecureRY()
 
-        APackageBAnalyticsAdapter.bPackageShared.bPackageInitializeFacebook(
-            bPackageApplication: application,
-            bPackageLaunchOptions: launchOptions
+        APackageBAnalyticsAdapter.CABootHousePotionRY.CAPickColonialBirthRY(
+            CALaptopSwapWindowRY: application,
+            CAIdahoUntilSixRY: launchOptions
         )
 
-        let bPackageAppID = BPackageProfile.bPackageConfiguration.bPackageAppID
-        let bPackageDeviceID = BPackageStorage.bPackageShared.bPackageStableDeviceID(
-            bPackageAppID: bPackageAppID
+        let CAMaxKeyMonkeyRY = CASeabedOneSpellRY.CAIdahoHoorayEnhanceRY.CAMaxKeyMonkeyRY
+        let CASayOrangeIndexRY = CAChairDearSlowRY.CABootHousePotionRY.CAInfoMouseHoorayRY(
+            CAMaxKeyMonkeyRY: CAMaxKeyMonkeyRY
         )
-        Adjust.addGlobalCallbackParameter(bPackageDeviceID, forKey: "ta_distinct_id")
-        if let bPackageAdjustConfig = ADJConfig(
-            appToken: BPackageThirdPartyProfile.bPackageAdjustAppToken,
+        Adjust.addGlobalCallbackParameter(CASayOrangeIndexRY, forKey: "ta_distinct_id")
+        if let CASnowingClearSkyRY = ADJConfig(
+            appToken: CAReadFishZeroRY.CAPassDirectorForgetRY,
             environment: ADJEnvironmentSandbox
         ) {
-            bPackageAdjustConfig.delegate = self
-            bPackageAdjustConfig.logLevel = .info
-            bPackageAdjustConfig.enableSendingInBackground()
-            bPackageAdjustConfig.enableCostDataInAttribution()
-            Adjust.initSdk(bPackageAdjustConfig)
+            CASnowingClearSkyRY.delegate = self
+            CASnowingClearSkyRY.logLevel = .info
+            CASnowingClearSkyRY.enableSendingInBackground()
+            CASnowingClearSkyRY.enableCostDataInAttribution()
+            Adjust.initSdk(CASnowingClearSkyRY)
             Task {
-                _ = await APackageBAnalyticsAdapter.bPackageShared.bPackageResolveAdjustAdID()
+                _ = await APackageBAnalyticsAdapter.CABootHousePotionRY.CAAnyJumpMuchRY()
             }
         }
 
         UNUserNotificationCenter.current().delegate = self
-        // MARK: - BPackage End
+        // MARK: - CAResBottleMyRY End
 
         // Register the StoreKit V1 transaction observer at app launch so
         // interrupted consumable purchases can finish on the next launch.
@@ -58,19 +58,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate, AdjustDelegate {
         return true
     }
 
-    // MARK: - BPackage Begin
+    // MARK: - CAResBottleMyRY Begin
 
     func adjustAttributionChanged(_ attribution: ADJAttribution?) {
-        Adjust.adid { bPackageAdID in
+        Adjust.adid { CACopperMoleBigRY in
             Task { @MainActor in
-                let bPackageNormalizedAdID = bPackageAdID ?? ""
-                APackageBAnalyticsAdapter.bPackageShared.bPackageUpdateAttribution(
-                    bPackageAttribution: attribution,
-                    bPackageAdID: bPackageNormalizedAdID
+                let CACountZeroSubRY = CACopperMoleBigRY ?? ""
+                APackageBAnalyticsAdapter.CABootHousePotionRY.CABlindUpAirRY(
+                    CAMuchNightRunsRY: attribution,
+                    CACopperMoleBigRY: CACountZeroSubRY
                 )
-                BPackage.bPackageShared.bPackageAdjustAttributionChanged(
-                    bPackageResult: APackageBAnalyticsAdapter.bPackageShared.bPackageAttributionResult,
-                    bPackageAdID: bPackageNormalizedAdID
+                CAResBottleMyRY.CABootHousePotionRY.CALeaveMomentsFishRY(
+                    CAAversionMagicFireRY: APackageBAnalyticsAdapter.CABootHousePotionRY.CAResWinDialectRY,
+                    CACopperMoleBigRY: CACountZeroSubRY
                 )
             }
         }
@@ -78,21 +78,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate, AdjustDelegate {
 
     func application(_ application: UIApplication,
                      didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-        BPackageAppDelegateSupport.bPackageDidRegisterForRemoteNotifications(
-            bPackageDeviceToken: deviceToken
+        CASlimeColonialLastRY.CAEveryGardenCeillingRY(
+            CAPhoneKnightCoalitionRY: deviceToken
         )
     }
 
     func application(_ application: UIApplication,
-                     didFailToRegisterForRemoteNotificationsWithError error: Error) {
-        BPackageLogger.bPackageShared.bPackageLog("推送错误", error.localizedDescription)
-    }
+                     didFailToRegisterForRemoteNotificationsWithError error: Error) {}
 
     func applicationWillTerminate(_ application: UIApplication) {
-        StoreKit1PurchaseManager.bPackageShared.bPackageStopObserving()
+        StoreKit1PurchaseManager.CABootHousePotionRY.CAFlatSupportAngerRY()
     }
 
-    // MARK: - BPackage End
+    // MARK: - CAResBottleMyRY End
 
     // MARK: UISceneSession Lifecycle
 
@@ -111,7 +109,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, AdjustDelegate {
 
 }
 
-// MARK: - BPackage Notifications
+// MARK: - CAResBottleMyRY Notifications
 
 extension AppDelegate: UNUserNotificationCenterDelegate {
     func userNotificationCenter(_ center: UNUserNotificationCenter,
@@ -123,7 +121,6 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse,
                                 withCompletionHandler completionHandler: @escaping () -> Void) {
-        BPackageLogger.bPackageShared.bPackageLog("推送", "用户点击通知")
         completionHandler()
     }
 }
