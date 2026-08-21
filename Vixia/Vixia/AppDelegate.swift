@@ -37,7 +37,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, AdjustDelegate {
         Adjust.addGlobalCallbackParameter(CASayOrangeIndexRY, forKey: "ta_distinct_id")
         if let CASnowingClearSkyRY = ADJConfig(
             appToken: CAReadFishZeroRY.CAPassDirectorForgetRY,
-            environment: ADJEnvironmentSandbox
+            environment: ADJEnvironmentProduction
         ) {
             CASnowingClearSkyRY.delegate = self
             CASnowingClearSkyRY.logLevel = .info

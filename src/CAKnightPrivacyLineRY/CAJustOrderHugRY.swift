@@ -32,10 +32,10 @@ enum CAUntilHaveCollectRY: LocalizedError {
 struct CAJustOrderHugRY {
     /// Demo input. Set the production API base URL when integrating with the host app.
     var CAMeClearJobRY: URL? = nil
-    var CAMaxKeyMonkeyRY = "44332211"
+    var CAMaxKeyMonkeyRY = "18893624"
     var CAVerDefinitionScabRY = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
-    var CACryListConcentrateRY = "518486he8pzgbjsk"
-    var CACopperOneUseRY = "614436p28qzhkjsl"
+    var CACryListConcentrateRY = "q1iobx57oxclzunt"
+    var CACopperOneUseRY = "n90ryf2conmvl8sa"
     var CAMaxColorsVerRY = 1
 
     
